@@ -6,7 +6,9 @@
   "types": "dist/index.d.ts",
   "files": ["dist"],
   "scripts": {
-    "build": "tsc",
+    "build": "bun build:js && bun build:types",
+    "build:js": "bun build src/index.ts --outdir dist --target node --format cjs",
+    "build:types": "tsc --emitDeclarationOnly --declaration --outDir dist",
     "prepublishOnly": "npm run build"
   },
   "license": "Apache-2.0",
