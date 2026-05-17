@@ -132,6 +132,8 @@ console.log(result.stdout);
 
 The web dashboard is embedded in the binary and available at `http://localhost:8080`.
 
+**Demo (mock mode):** https://aeroxy.github.io/cage-bro/
+
 | Route | Page |
 |---|---|
 | `/#/` | Dashboard home |
