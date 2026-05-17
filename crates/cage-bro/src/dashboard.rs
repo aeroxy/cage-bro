@@ -6,7 +6,7 @@ use axum::{
 use rust_embed::Embed;
 
 #[derive(Embed)]
-#[folder = "../../dashboard/dist/"]
+#[folder = "dashboard/dist/"]
 struct DashboardAssets;
 
 fn error_response(status: StatusCode, msg: &str) -> Response {

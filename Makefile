@@ -29,7 +29,7 @@ test:
 
 ## Build dashboard frontend
 dashboard:
-	cd dashboard && bun run build
+	cd crates/cage-bro/dashboard && bun run build
 
 ## Install dependencies (obscura browser)
 setup:
@@ -38,7 +38,7 @@ setup:
 ## Remove build artifacts
 clean:
 	cargo clean
-	rm -rf dashboard/dist dashboard/node_modules
+	rm -rf crates/cage-bro/dashboard/dist crates/cage-bro/dashboard/node_modules
 
 ## Publish to crates.io
 publish: build
@@ -62,7 +62,7 @@ bump-patch:
 	patch=$$(echo $$old | cut -d. -f3); \
 	new="$$major.$$minor.$$((patch+1))"; \
 	sed -i '' "s/^version = \"$$old\"/version = \"$$new\"/" Cargo.toml; \
-	sed -i '' "s/version = \"$$old\"/version = \"$$new\"/" dashboard/package.json; \
+	sed -i '' "s/version = \"$$old\"/version = \"$$new\"/" crates/cage-bro/dashboard/package.json; \
 	sed -i '' "s/version \"$$old\"/version \"$$new\"/" Formula/cage-bro.rb; \
 	sed -i '' "s|/$$old/|/$$new/|g" Formula/cage-bro.rb; \
 	echo "$$old → $$new"
@@ -74,7 +74,7 @@ bump-minor:
 	minor=$$(echo $$old | cut -d. -f2); \
 	new="$$major.$$((minor+1)).0"; \
 	sed -i '' "s/^version = \"$$old\"/version = \"$$new\"/" Cargo.toml; \
-	sed -i '' "s/version = \"$$old\"/version = \"$$new\"/" dashboard/package.json; \
+	sed -i '' "s/version = \"$$old\"/version = \"$$new\"/" crates/cage-bro/dashboard/package.json; \
 	sed -i '' "s/version \"$$old\"/version \"$$new\"/" Formula/cage-bro.rb; \
 	sed -i '' "s|/$$old/|/$$new/|g" Formula/cage-bro.rb; \
 	echo "$$old → $$new"
@@ -85,7 +85,7 @@ bump-major:
 	major=$$(echo $$old | cut -d. -f1); \
 	new="$$((major+1)).0.0"; \
 	sed -i '' "s/^version = \"$$old\"/version = \"$$new\"/" Cargo.toml; \
-	sed -i '' "s/version = \"$$old\"/version = \"$$new\"/" dashboard/package.json; \
+	sed -i '' "s/version = \"$$old\"/version = \"$$new\"/" crates/cage-bro/dashboard/package.json; \
 	sed -i '' "s/version \"$$old\"/version \"$$new\"/" Formula/cage-bro.rb; \
 	sed -i '' "s|/$$old/|/$$new/|g" Formula/cage-bro.rb; \
 	echo "$$old → $$new"

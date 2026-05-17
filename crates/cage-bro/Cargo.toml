@@ -12,6 +12,7 @@ description = "Sandboxed execution environment for AI agents — single binary w
 include = [
     "src/**/*",
     "Cargo.toml",
+    "dashboard/dist/**/*",
 ]
 
 [[bin]]
@@ -19,8 +20,8 @@ name = "cage-bro"
 path = "src/main.rs"
 
 [dependencies]
-cage-bro-runtime = { path = "../cage-bro-runtime" }
-cage-bro-code = { path = "../cage-bro-code" }
+cage-bro-runtime = { version = "0.1.0", path = "../cage-bro-runtime" }
+cage-bro-code = { version = "0.1.0", path = "../cage-bro-code" }
 
 axum = { workspace = true }
 clap = { workspace = true }

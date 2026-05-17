@@ -25,15 +25,15 @@ jobs:
 
       - name: Install dependencies
         run: bun install --frozen-lockfile
-        working-directory: dashboard
+        working-directory: crates/cage-bro/dashboard
 
       - name: Build dashboard
         run: bun run build
-        working-directory: dashboard
+        working-directory: crates/cage-bro/dashboard
 
       - uses: actions/upload-pages-artifact@v3
         with:
-          path: dashboard/dist
+          path: crates/cage-bro/dashboard/dist
 
   deploy:
     needs: build
