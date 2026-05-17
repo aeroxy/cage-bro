@@ -1,0 +1,16 @@
+{
+  "name": "@cage-bro/sdk",
+  "version": "0.1.0",
+  "description": "TypeScript SDK for cage-bro sandbox",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsc",
+    "prepublishOnly": "npm run build"
+  },
+  "license": "Apache-2.0",
+  "devDependencies": {
+    "typescript": "^5.0.0"
+  }
+}

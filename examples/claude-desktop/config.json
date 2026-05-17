@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "cage-bro": {
+      "command": "cage-bro",
+      "args": ["mcp"]
+    }
+  }
+}

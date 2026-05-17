@@ -1,0 +1,44 @@
+[package]
+name = "cage-bro"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+repository.workspace = true
+license.workspace = true
+readme.workspace = true
+keywords.workspace = true
+categories.workspace = true
+description = "Sandboxed execution environment for AI agents — single binary with browser, shell, code, files, and MCP"
+include = [
+    "src/**/*",
+    "Cargo.toml",
+]
+
+[[bin]]
+name = "cage-bro"
+path = "src/main.rs"
+
+[dependencies]
+cage-bro-runtime = { path = "../cage-bro-runtime" }
+cage-bro-code = { path = "../cage-bro-code" }
+
+axum = { workspace = true }
+clap = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+tokio = { workspace = true }
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
+anyhow = { workspace = true }
+rust-embed = { workspace = true }
+uuid = { workspace = true }
+toml = { workspace = true }
+shell-words = "1.1.1"
+tokio-tungstenite = "0.29.0"
+futures-util = "0.3.32"
+reqwest = { version = "0.12", features = ["json"] }
+mime_guess = "2.0.5"
+
+[dev-dependencies]
+reqwest = { version = "0.12", features = ["json"] }
+tokio-tungstenite = "0.29.0"

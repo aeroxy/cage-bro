@@ -1,0 +1,21 @@
+{
+  "name": "@cage-bro/cli",
+  "version": "0.1.0",
+  "description": "CLI installer for cage-bro sandbox — downloads the binary on install",
+  "bin": {
+    "cage-bro": "./bin/cage-bro.js"
+  },
+  "files": ["bin"],
+  "scripts": {
+    "postinstall": "node bin/install.js"
+  },
+  "keywords": ["sandbox", "ai", "agents", "browser", "mcp"],
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/aeroxy/cage-bro"
+  },
+  "dependencies": {
+    "@cage-bro/sdk": "^0.1.0"
+  }
+}
