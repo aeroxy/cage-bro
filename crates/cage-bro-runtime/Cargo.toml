@@ -2,7 +2,13 @@
 name = "cage-bro-runtime"
 version.workspace = true
 edition.workspace = true
+authors.workspace = true
+repository.workspace = true
 license.workspace = true
+readme.workspace = true
+keywords.workspace = true
+categories.workspace = true
+description = "Process runtime for cage-bro sandbox (PTY shell, landlock, seccomp)"
 
 [dependencies]
 async-trait = { workspace = true }

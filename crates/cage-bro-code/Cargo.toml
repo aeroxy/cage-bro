@@ -2,7 +2,13 @@
 name = "cage-bro-code"
 version.workspace = true
 edition.workspace = true
+authors.workspace = true
+repository.workspace = true
 license.workspace = true
+readme.workspace = true
+keywords.workspace = true
+categories.workspace = true
+description = "Code execution engine for cage-bro sandbox (Python, Node.js, Jupyter)"
 
 [dependencies]
 async-trait = { workspace = true }

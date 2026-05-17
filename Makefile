@@ -41,8 +41,10 @@ clean:
 	rm -rf crates/cage-bro/dashboard/dist crates/cage-bro/dashboard/node_modules
 
 ## Publish to crates.io
-publish: build
-	cargo publish --allow-dirty
+publish: dashboard
+	cargo publish -p cage-bro-code --allow-dirty
+	cargo publish -p cage-bro-runtime --allow-dirty
+	cargo publish -p cage-bro --allow-dirty
 
 ## Update Formula/cage-bro.rb SHA256 from local release zip (run after release, before upload)
 ##   make update-formula

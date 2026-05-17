@@ -1,5 +1,9 @@
 # cage-bro
 
+[![npm CLI](https://img.shields.io/npm/v/@cage-bro/cli)](https://www.npmjs.com/package/@cage-bro/cli)
+[![crates.io](https://img.shields.io/crates/v/cage-bro)](https://crates.io/crates/cage-bro)
+[![PyPI CLI](https://img.shields.io/pypi/v/cage-bro-cli)](https://pypi.org/project/cage-bro-cli/)
+
 A sandboxed execution environment for AI agents. Single Rust binary with browser, shell, code execution, file ops, and MCP server.
 
 ## Why cage-bro
@@ -49,6 +53,27 @@ open http://localhost:8080
 
 ## Installation
 
+### Cargo
+```bash
+cargo install cage-bro
+```
+
+### Homebrew
+```bash
+brew install aeroxy/tap/cage-bro
+```
+
+### pip
+```bash
+pip install cage-bro-cli
+```
+
+### npm
+```bash
+npm install -g @cage-bro/cli
+```
+
+### Setup
 ```bash
 # Install obscura browser
 cage-bro setup
@@ -102,7 +127,9 @@ cage-bro mcp --http --port 8081
 
 ## SDKs
 
-### Python
+### Python SDK
+[![PyPI](https://img.shields.io/pypi/v/cage-bro)](https://pypi.org/project/cage-bro/)
+
 ```bash
 pip install cage-bro
 ```
@@ -115,7 +142,9 @@ result = cage.shell_exec("ls -la")
 print(result["stdout"])
 ```
 
-### TypeScript
+### TypeScript SDK
+[![npm](https://img.shields.io/npm/v/@cage-bro/sdk)](https://www.npmjs.com/package/@cage-bro/sdk)
+
 ```bash
 npm install @cage-bro/sdk
 ```
