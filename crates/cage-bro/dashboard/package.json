@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
+    "build:gh-pages": "tsc -b && BASE_PATH=/cage-bro/ vite build",
     "lint": "eslint .",
     "preview": "vite preview"
   },

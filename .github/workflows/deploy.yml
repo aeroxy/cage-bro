@@ -30,6 +30,8 @@ jobs:
       - name: Build dashboard
         run: bun run build
         working-directory: crates/cage-bro/dashboard
+        env:
+          BASE_PATH: /cage-bro/
 
       - uses: actions/upload-pages-artifact@v3
         with:

@@ -51,7 +51,7 @@ update-formula:
 	echo "Computing macOS SHA256 …"; \
 	mac_sha=$$(shasum -a 256 "$$mac_zip" | cut -d' ' -f1); \
 	echo "macOS SHA256: $$mac_sha"; \
-	sed -i '' "s/sha256 \"[a-f0-9]*\"/sha256 \"$$mac_sha\"/" Formula/cage-bro.rb; \
+	sed -i '' "s/sha256 \"[A-Za-z0-9_-]*\"/sha256 \"$$mac_sha\"/" Formula/cage-bro.rb; \
 	echo "Formula/cage-bro.rb updated"
 
 ## Bump the patch version (0.1.0 → 0.1.1) and update all version references
