@@ -18,7 +18,7 @@ const navItems = [
 
 function CageBroLogo({ className }: { className?: string }) {
   return (
-    <img src="/icons.svg" alt="cage-bro" className={className} />
+    <img src={`${import.meta.env.BASE_URL}icons.svg`} alt="cage-bro" className={className} />
   )
 }
 

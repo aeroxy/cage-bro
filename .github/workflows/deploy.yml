@@ -32,6 +32,7 @@ jobs:
         working-directory: crates/cage-bro/dashboard
         env:
           BASE_PATH: /cage-bro/
+          VITE_MOCK: "true"
 
       - uses: actions/upload-pages-artifact@v3
         with:

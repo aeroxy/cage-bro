@@ -162,4 +162,4 @@ When `timeout_ms` is set, the command is killed after the timeout. However, the 
 
 ## Dashboard Is Embedded at Build Time
 
-The React dashboard is compiled to static files and embedded into the Rust binary via `rust-embed`. Changes to the dashboard require rebuilding the binary. The dashboard has a mock mode that activates when the backend is unreachable, so you can develop the frontend independently with `npm run dev`.
+The React dashboard is compiled to static files and embedded into the Rust binary via `rust-embed`. Changes to the dashboard require rebuilding the binary. The dashboard has a mock mode that activates when the backend is unreachable, so you can develop the frontend independently with `cd crates/cage-bro/dashboard && bun run dev`.
