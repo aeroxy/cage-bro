@@ -67,6 +67,14 @@ bump-patch:
 	sed -i '' "s/version = \"$$old\"/version = \"$$new\"/" crates/cage-bro/dashboard/package.json; \
 	sed -i '' "s/version \"$$old\"/version \"$$new\"/" Formula/cage-bro.rb; \
 	sed -i '' "s|/$$old/|/$$new/|g" Formula/cage-bro.rb; \
+	sed -i '' "s/^version = \"$$old\"/version = \"$$new\"/" sdk/python/pyproject.toml; \
+	sed -i '' "s/__version__ = \"$$old\"/__version__ = \"$$new\"/" sdk/python/cage_bro/__init__.py; \
+	sed -i '' "s/\"version\": \"$$old\"/\"version\": \"$$new\"/" sdk/typescript/package.json; \
+	sed -i '' "s/^version = \"$$old\"/version = \"$$new\"/" cli-python/pyproject.toml; \
+	sed -i '' "s/VERSION = \"$$old\"/VERSION = \"$$new\"/" cli-python/cage_bro_cli/__init__.py; \
+	sed -i '' "s/\"version\": \"$$old\"/\"version\": \"$$new\"/" cli-typescript/package.json; \
+	sed -i '' "s/const VERSION = \"$$old\"/const VERSION = \"$$new\"/" cli-typescript/bin/install.js; \
+	sed -i '' "s/VERSION = \"$$old\"/VERSION = \"$$new\"/" cli-typescript/bin/install.js; \
 	echo "$$old → $$new"
 
 ## Bump the minor version (0.1.1 → 0.2.0) and update all version references
@@ -79,6 +87,14 @@ bump-minor:
 	sed -i '' "s/version = \"$$old\"/version = \"$$new\"/" crates/cage-bro/dashboard/package.json; \
 	sed -i '' "s/version \"$$old\"/version \"$$new\"/" Formula/cage-bro.rb; \
 	sed -i '' "s|/$$old/|/$$new/|g" Formula/cage-bro.rb; \
+	sed -i '' "s/^version = \"$$old\"/version = \"$$new\"/" sdk/python/pyproject.toml; \
+	sed -i '' "s/__version__ = \"$$old\"/__version__ = \"$$new\"/" sdk/python/cage_bro/__init__.py; \
+	sed -i '' "s/\"version\": \"$$old\"/\"version\": \"$$new\"/" sdk/typescript/package.json; \
+	sed -i '' "s/^version = \"$$old\"/version = \"$$new\"/" cli-python/pyproject.toml; \
+	sed -i '' "s/VERSION = \"$$old\"/VERSION = \"$$new\"/" cli-python/cage_bro_cli/__init__.py; \
+	sed -i '' "s/\"version\": \"$$old\"/\"version\": \"$$new\"/" cli-typescript/package.json; \
+	sed -i '' "s/const VERSION = \"$$old\"/const VERSION = \"$$new\"/" cli-typescript/bin/install.js; \
+	sed -i '' "s/VERSION = \"$$old\"/VERSION = \"$$new\"/" cli-typescript/bin/install.js; \
 	echo "$$old → $$new"
 
 ## Bump the major version (0.2.0 → 1.0.0) and update all version references
@@ -90,4 +106,12 @@ bump-major:
 	sed -i '' "s/version = \"$$old\"/version = \"$$new\"/" crates/cage-bro/dashboard/package.json; \
 	sed -i '' "s/version \"$$old\"/version \"$$new\"/" Formula/cage-bro.rb; \
 	sed -i '' "s|/$$old/|/$$new/|g" Formula/cage-bro.rb; \
+	sed -i '' "s/^version = \"$$old\"/version = \"$$new\"/" sdk/python/pyproject.toml; \
+	sed -i '' "s/__version__ = \"$$old\"/__version__ = \"$$new\"/" sdk/python/cage_bro/__init__.py; \
+	sed -i '' "s/\"version\": \"$$old\"/\"version\": \"$$new\"/" sdk/typescript/package.json; \
+	sed -i '' "s/^version = \"$$old\"/version = \"$$new\"/" cli-python/pyproject.toml; \
+	sed -i '' "s/VERSION = \"$$old\"/VERSION = \"$$new\"/" cli-python/cage_bro_cli/__init__.py; \
+	sed -i '' "s/\"version\": \"$$old\"/\"version\": \"$$new\"/" cli-typescript/package.json; \
+	sed -i '' "s/const VERSION = \"$$old\"/const VERSION = \"$$new\"/" cli-typescript/bin/install.js; \
+	sed -i '' "s/VERSION = \"$$old\"/VERSION = \"$$new\"/" cli-typescript/bin/install.js; \
 	echo "$$old → $$new"

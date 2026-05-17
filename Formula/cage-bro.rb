@@ -1,7 +1,7 @@
 class CageBro < Formula
   desc "Sandboxed execution environment for AI agents — single Rust binary with browser, shell, code, files, and MCP"
   homepage "https://github.com/aeroxy/cage-bro"
-  url "https://github.com/aeroxy/cage-bro/releases/download/0.1.0/cage-bro-macos-arm64.zip"
+  url "https://github.com/aeroxy/cage-bro/releases/download/0.1.1/cage-bro-macos-arm64.zip"
   sha256 "8df7858fd0494fca89a1fa20e5b4ae1f3cc9f0aa952f9a45ffde41dcc4a996e7"
   license "Apache-2.0"
 

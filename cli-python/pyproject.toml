@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "cage-bro-cli"
-version = "0.1.0"
+version = "0.1.1"
 description = "CLI installer for cage-bro sandbox — downloads the Rust binary on install"
 readme = "README.md"
 license = "Apache-2.0"

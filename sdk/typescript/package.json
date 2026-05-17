@@ -1,10 +1,10 @@
 {
   "name": "@cage-bro/sdk",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "TypeScript SDK for cage-bro sandbox",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
-  "files": ["dist"],
+  "files": ["dist", "README.md"],
   "scripts": {
     "build": "bun build:js && bun build:types",
     "build:js": "bun build src/index.ts --outdir dist --target node --format cjs",

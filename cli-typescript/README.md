@@ -1,14 +1,14 @@
-# cage-bro CLI (Python)
+# cage-bro CLI (TypeScript)
 
-[![PyPI](https://img.shields.io/pypi/v/cage-bro-cli)](https://pypi.org/project/cage-bro-cli/)
+[![npm](https://img.shields.io/npm/v/@cage-bro/cli)](https://www.npmjs.com/package/@cage-bro/cli)
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue)](LICENSE)
 
-CLI installer for [cage-bro](https://github.com/aeroxy/cage-bro) — downloads the pre-built Rust binary on first run.
+CLI installer for [cage-bro](https://github.com/aeroxy/cage-bro) — downloads the pre-built Rust binary on install.
 
 ## Install
 
 ```bash
-pip install cage-bro-cli
+npm install -g @cage-bro/cli
 ```
 
 ## Usage
@@ -24,12 +24,7 @@ cage-bro mcp
 cage-bro setup
 ```
 
-On first run, the CLI downloads the pre-built binary for your platform from [GitHub releases](https://github.com/aeroxy/cage-bro/releases) and caches it locally.
-
-| Platform | Cache directory |
-|---|---|
-| macOS | `~/Library/Caches/cage-bro/` |
-| Linux | `~/.cache/cage-bro/` |
+On first run, the CLI downloads the pre-built binary for your platform from [GitHub releases](https://github.com/aeroxy/cage-bro/releases) and caches it in `~/.cache/cage-bro/`.
 
 ## Supported Platforms
 
@@ -51,8 +46,8 @@ cage-bro is a sandboxed execution environment for AI agents. Single Rust binary 
 ## Links
 
 - [cage-bro main project](https://github.com/aeroxy/cage-bro)
-- [Python SDK](https://pypi.org/project/cage-bro/) (programmatic API)
-- [TypeScript CLI](https://www.npmjs.com/package/@cage-bro/cli)
+- [TypeScript SDK](https://www.npmjs.com/package/@cage-bro/sdk) (programmatic API)
+- [Python CLI](https://pypi.org/project/cage-bro-cli/)
 
 ## License
 

@@ -8,7 +8,7 @@ const os = require("os");
 const path = require("path");
 const https = require("https");
 
-const VERSION = "0.1.0";
+const VERSION = "0.1.1";
 const GITHUB_REPO = "aeroxy/cage-bro";
 const BINARY_NAME = "cage-bro";
 

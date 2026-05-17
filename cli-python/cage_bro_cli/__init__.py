@@ -9,7 +9,7 @@ from pathlib import Path
 
 import httpx
 
-VERSION = "0.1.0"
+VERSION = "0.1.1"
 GITHUB_REPO = "aeroxy/cage-bro"
 BINARY_NAME = "cage-bro"
 
