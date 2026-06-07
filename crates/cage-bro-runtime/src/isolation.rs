@@ -274,7 +274,16 @@ mod linux {
             return;
         }
         let attr = PathBeneathAttr { allowed_access: access, parent_fd: fd };
-        add_rule(ruleset_fd, LANDLOCK_RULE_PATH_BENEATH, &attr);
+        // Runs in the parent (not pre_exec), so logging here is safe. A failed
+        // rule means the sandbox silently loses access to `path` (e.g. its own
+        // workspace) — worth surfacing.
+        if add_rule(ruleset_fd, LANDLOCK_RULE_PATH_BENEATH, &attr) != 0 {
+            tracing::warn!(
+                "failed to add Landlock rule for {}: {}",
+                path,
+                std::io::Error::last_os_error()
+            );
+        }
         libc::close(fd);
     }
 

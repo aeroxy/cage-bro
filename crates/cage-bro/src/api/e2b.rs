@@ -150,7 +150,9 @@ async fn kill(State(state): State<AppState>, Path(id): Path<String>) -> (StatusC
                             tokio::fs::canonicalize(ws).await,
                             tokio::fs::canonicalize(e2b_base_dir()).await,
                         ) {
-                            if ws_real.starts_with(&base_real) {
+                            // Strict subdirectory: `starts_with` is true for an
+                            // equal path, which would delete the whole base.
+                            if ws_real != base_real && ws_real.starts_with(&base_real) {
                                 let _ = tokio::fs::remove_dir_all(&ws_real).await;
                             }
                         }
