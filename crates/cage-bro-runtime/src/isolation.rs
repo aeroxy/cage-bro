@@ -274,6 +274,11 @@ mod linux {
                 return -1;
             }
             let ruleset_fd = ruleset_fd as RawFd;
+            // Close-on-exec so this fd can't leak into an unrelated child that
+            // another thread execs concurrently. Our own child still inherits it
+            // across fork (CLOEXEC only acts on exec) and enforces + closes it in
+            // pre_exec before its own exec.
+            libc::fcntl(ruleset_fd, libc::F_SETFD, libc::FD_CLOEXEC);
 
             for dir in super::SYSTEM_RO_DIRS {
                 allow_path(ruleset_fd, dir, ACCESS_FS_RO);
