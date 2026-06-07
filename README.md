@@ -7,6 +7,8 @@
 
 A sandboxed execution environment for AI agents. Single Rust binary with browser, shell, code execution, file ops, and MCP server.
 
+📖 **[Guide: isolated workspaces for fleets of agents →](https://github.com/aeroxy/cage-bro/blob/main/GUIDE.md)** — run many agents on one box, each jailed to its own workspace, or drive a clean remote sandbox in a VM.
+
 ## Why cage-bro
 
 | | Claude Desktop sandbox | Docker sandbox | cage-bro |
@@ -81,6 +83,8 @@ open http://localhost:8080
 | **Dashboard** | Web UI with terminal, code editor, file browser |
 
 ## Installation
+
+> **Platform support:** Linux and macOS. Windows is **not supported** for now — [PRs welcome](https://github.com/aeroxy/cage-bro/pulls).
 
 ### Cargo
 ```bash
