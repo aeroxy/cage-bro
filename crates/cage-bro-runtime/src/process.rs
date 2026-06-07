@@ -16,6 +16,10 @@ use crate::traits::*;
 const SNAPSHOT_SUBDIR: &str = ".cage-bro/snapshots";
 /// Where restored/forked workspaces are materialized.
 const RESTORE_SUBDIR: &str = ".cage-bro/restored";
+/// Cap on captured stdout/stderr per exec, bounding server memory against
+/// runaway output from untrusted code. Output past this is dropped; the child
+/// receives EPIPE once the reader thread closes the pipe.
+const MAX_CAPTURE_BYTES: u64 = 10 * 1024 * 1024;
 
 pub struct ProcessRuntime {
     sandboxes: Arc<Mutex<HashMap<Uuid, Sandbox>>>,
@@ -200,13 +204,15 @@ fn run_isolated(
         command.current_dir(dir);
     }
 
-    // Register isolation (pre_exec hook); the guard closes the parent-side
-    // Landlock descriptor when dropped at the end of this function.
-    let _guard = isolation.apply(&mut command);
+    // Register isolation (pre_exec hook). The guard holds the parent's copy of
+    // the Landlock descriptor; the child inherits its own copy in pre_exec, so
+    // the parent's can be released as soon as the fork (spawn) has happened.
+    let guard = isolation.apply(&mut command);
 
     let mut child = command
         .spawn()
         .map_err(|e| RuntimeError::ExecutionFailed(format!("spawn failed: {}", e)))?;
+    drop(guard);
 
     // Drain stdout/stderr concurrently to avoid pipe-buffer deadlock.
     let stdout_handle = child.stdout.take().map(spawn_reader);
@@ -246,7 +252,7 @@ fn run_isolated(
 fn spawn_reader<R: Read + Send + 'static>(mut reader: R) -> std::thread::JoinHandle<String> {
     std::thread::spawn(move || {
         let mut buf = Vec::new();
-        let _ = reader.read_to_end(&mut buf);
+        let _ = reader.by_ref().take(MAX_CAPTURE_BYTES).read_to_end(&mut buf);
         String::from_utf8_lossy(&buf).into_owned()
     })
 }
@@ -265,7 +271,7 @@ fn copy_tree(src: &Path, dst: &Path) -> std::io::Result<()> {
             #[cfg(unix)]
             {
                 let link = std::fs::read_link(entry.path())?;
-                let _ = std::os::unix::fs::symlink(link, &target);
+                std::os::unix::fs::symlink(link, &target)?;
             }
         } else {
             std::fs::copy(entry.path(), &target)?;
