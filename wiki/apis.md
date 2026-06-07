@@ -12,7 +12,7 @@ Returns server health status.
 
 **Response**
 ```json
-{ "status": "ok", "version": "0.1.0" }
+{ "status": "ok", "version": "0.1.1" }
 ```
 
 ### `GET /v1/sandbox/info`
@@ -21,7 +21,42 @@ Returns sandbox metadata.
 
 **Response**
 ```json
-{ "name": "cage-bro", "version": "0.1.0", "runtime": "process", "status": "running" }
+{ "name": "cage-bro", "version": "0.1.1", "runtime": "process", "status": "running" }
+```
+
+---
+
+## E2B-compatible lifecycle API
+
+Mounted at the **server root** so the E2B SDK can drive sandbox lifecycle — point `E2B_API_URL` at cage-bro. Unlike the `/v1/*` API, these return proper HTTP status codes (201/204/404/500).
+
+**Scope:** orchestration only. The in-sandbox `envd` RPC layer is not implemented, so run code via the `/sandboxes/{id}/exec` extension below or the native `/v1/*` API.
+
+### `POST /sandboxes`
+
+Create a sandbox (gets its own workspace dir under `.cage-bro/e2b/<id>`). All fields optional: `templateID`, `metadata`, `timeout`, `memoryMB`.
+
+**Response** `201`
+```json
+{ "sandboxID": "…", "templateID": "base", "clientID": "cage-bro", "state": "running", "startedAt": "…", "memoryMB": 512, "cpuCount": 1 }
+```
+
+### `GET /sandboxes` — list all. `GET /sandboxes/{id}` — get one.
+### `DELETE /sandboxes/{id}` — kill (removes the workspace dir). → `204`
+### `POST /sandboxes/{id}/timeout` — refresh timeout (acknowledged; not auto-reaped). → `204`
+
+### `POST /sandboxes/{id}/exec` *(cage-bro extension)*
+
+Run a shell command inside a tracked sandbox (via `sh -c`, jailed to its workspace).
+
+**Request**
+```json
+{ "command": "python3 -V", "timeoutMs": 10000 }
+```
+
+**Response**
+```json
+{ "exitCode": 0, "stdout": "Python 3.12.0\n", "stderr": "", "durationMs": 120 }
 ```
 
 ---
