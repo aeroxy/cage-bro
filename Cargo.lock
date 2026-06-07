@@ -189,7 +189,7 @@ checksum = "1e748733b7cbc798e1434b6ac524f0c1ff2ab456fe201501e6497c8417a4fc33"
 
 [[package]]
 name = "cage-bro"
-version = "0.1.1"
+version = "0.2.0"
 dependencies = [
  "anyhow",
  "axum",
@@ -213,7 +213,7 @@ dependencies = [
 
 [[package]]
 name = "cage-bro-code"
-version = "0.1.1"
+version = "0.2.0"
 dependencies = [
  "async-trait",
  "hex",
@@ -230,7 +230,7 @@ dependencies = [
 
 [[package]]
 name = "cage-bro-runtime"
-version = "0.1.1"
+version = "0.2.0"
 dependencies = [
  "async-trait",
  "libc",

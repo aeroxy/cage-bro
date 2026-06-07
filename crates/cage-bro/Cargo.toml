@@ -21,8 +21,8 @@ name = "cage-bro"
 path = "src/main.rs"
 
 [dependencies]
-cage-bro-runtime = { version = "0.1.0", path = "../cage-bro-runtime" }
-cage-bro-code = { version = "0.1.0", path = "../cage-bro-code" }
+cage-bro-runtime = { version = "0.2.0", path = "../cage-bro-runtime" }
+cage-bro-code = { version = "0.2.0", path = "../cage-bro-code" }
 
 axum = { workspace = true }
 clap = { workspace = true }

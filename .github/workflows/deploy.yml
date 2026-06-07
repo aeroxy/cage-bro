@@ -1,8 +1,8 @@
 name: Deploy Dashboard to GitHub Pages
 
 on:
-  push:
-    branches: [main]
+  # Manual-only: trigger from the Actions tab ("Run workflow"), not on every push.
+  workflow_dispatch:
 
 permissions:
   contents: read
