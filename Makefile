@@ -64,6 +64,7 @@ bump-patch:
 	patch=$$(echo $$old | cut -d. -f3); \
 	new="$$major.$$minor.$$((patch+1))"; \
 	sed -i '' "s/^version = \"$$old\"/version = \"$$new\"/" Cargo.toml; \
+	sed -i '' -E "s|version = \"[0-9.]+\"(, path = \"\.\./cage-bro-)|version = \"$$new\"\1|g" crates/cage-bro/Cargo.toml; \
 	sed -i '' "s/version = \"$$old\"/version = \"$$new\"/" crates/cage-bro/dashboard/package.json; \
 	sed -i '' "s/version \"$$old\"/version \"$$new\"/" Formula/cage-bro.rb; \
 	sed -i '' "s|/$$old/|/$$new/|g" Formula/cage-bro.rb; \
@@ -84,6 +85,7 @@ bump-minor:
 	minor=$$(echo $$old | cut -d. -f2); \
 	new="$$major.$$((minor+1)).0"; \
 	sed -i '' "s/^version = \"$$old\"/version = \"$$new\"/" Cargo.toml; \
+	sed -i '' -E "s|version = \"[0-9.]+\"(, path = \"\.\./cage-bro-)|version = \"$$new\"\1|g" crates/cage-bro/Cargo.toml; \
 	sed -i '' "s/version = \"$$old\"/version = \"$$new\"/" crates/cage-bro/dashboard/package.json; \
 	sed -i '' "s/version \"$$old\"/version \"$$new\"/" Formula/cage-bro.rb; \
 	sed -i '' "s|/$$old/|/$$new/|g" Formula/cage-bro.rb; \
@@ -103,6 +105,7 @@ bump-major:
 	major=$$(echo $$old | cut -d. -f1); \
 	new="$$((major+1)).0.0"; \
 	sed -i '' "s/^version = \"$$old\"/version = \"$$new\"/" Cargo.toml; \
+	sed -i '' -E "s|version = \"[0-9.]+\"(, path = \"\.\./cage-bro-)|version = \"$$new\"\1|g" crates/cage-bro/Cargo.toml; \
 	sed -i '' "s/version = \"$$old\"/version = \"$$new\"/" crates/cage-bro/dashboard/package.json; \
 	sed -i '' "s/version \"$$old\"/version \"$$new\"/" Formula/cage-bro.rb; \
 	sed -i '' "s|/$$old/|/$$new/|g" Formula/cage-bro.rb; \
