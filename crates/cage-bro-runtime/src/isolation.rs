@@ -102,17 +102,16 @@ impl Isolation {
         use std::os::unix::process::CommandExt;
         // SAFETY: the closure runs in the forked child before exec and performs
         // only async-signal-safe operations — raw syscalls (setrlimit, prctl,
-        // landlock_restrict_self) with no heap allocation. The Landlock fd, if
-        // any, is captured by value as a plain integer.
+        // landlock_restrict_self), plus write/_exit on failure. No allocation,
+        // no std error construction. The Landlock fd, if any, is captured by
+        // value as a plain integer. enforce() fails closed (writes to stderr and
+        // _exits) if a built ruleset can't be enforced, so the child never runs
+        // unconfined; fd == -1 (Landlock unavailable) is an intentional skip.
         unsafe {
             command.pre_exec(move || {
                 set_rlimits(mem, cpu, fsize);
-                // Fail *closed*: if Landlock was available and we built a ruleset
-                // but enforcement fails, abort the exec rather than running the
-                // child unconfined. (An unavailable Landlock yields fd == -1,
-                // which enforce() treats as an intentional rlimits-only skip.)
                 #[cfg(target_os = "linux")]
-                linux::enforce(ruleset_fd)?;
+                linux::enforce(ruleset_fd);
                 Ok(())
             });
         }
@@ -329,25 +328,31 @@ mod linux {
         }
     }
 
-    /// Enforce the ruleset in the child. Async-signal-safe: a few raw syscalls
-    /// and an alloc-free `io::Error` (built from `errno`). A `-1` fd means
-    /// Landlock was unavailable — an intentional rlimits-only skip, returns Ok.
-    /// Any *enforcement* failure returns Err so the `pre_exec` closure aborts
-    /// the exec instead of running the child unconfined.
-    pub fn enforce(ruleset_fd: RawFd) -> std::io::Result<()> {
+    /// Enforce the ruleset in the child. Runs post-fork in `pre_exec`, so it uses
+    /// ONLY async-signal-safe operations: raw syscalls, `write`, and `_exit` — no
+    /// allocation, no std error construction. A `-1` fd means Landlock was
+    /// unavailable (intentional rlimits-only skip). On any *enforcement* failure
+    /// it fails **closed**: write a diagnostic to the (captured) stderr pipe and
+    /// `_exit(127)` so the child dies before `execvp` rather than run unconfined.
+    pub fn enforce(ruleset_fd: RawFd) {
         if ruleset_fd < 0 {
-            return Ok(());
+            return;
         }
         unsafe {
             // Landlock requires no_new_privs to be set first.
             if libc::prctl(libc::PR_SET_NO_NEW_PRIVS, 1, 0, 0, 0) != 0 {
-                return Err(std::io::Error::last_os_error());
+                fail_closed(b"[cage-bro] isolation setup failed: prctl(PR_SET_NO_NEW_PRIVS)\n");
             }
             if restrict_self(ruleset_fd) != 0 {
-                return Err(std::io::Error::last_os_error());
+                fail_closed(b"[cage-bro] isolation setup failed: landlock_restrict_self\n");
             }
             libc::close(ruleset_fd);
         }
-        Ok(())
+    }
+
+    /// Write `msg` to stderr and terminate the child. Async-signal-safe.
+    unsafe fn fail_closed(msg: &[u8]) -> ! {
+        libc::write(libc::STDERR_FILENO, msg.as_ptr() as *const libc::c_void, msg.len());
+        libc::_exit(127);
     }
 }

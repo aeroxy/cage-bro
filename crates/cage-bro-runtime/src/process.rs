@@ -380,12 +380,15 @@ async fn copy_tree_async(src: PathBuf, dst: PathBuf) -> Result<(), String> {
 
 /// Recursively copy a directory tree from `src` to `dst`, creating `dst`.
 fn copy_tree(src: &Path, dst: &Path) -> std::io::Result<()> {
-    // `dst` is threaded unchanged as `dst_root` so that, if `dst` lives inside
-    // `src`, we skip *exactly* the destination directory when we reach it —
-    // preventing recursion into our own output without over-skipping unrelated
-    // siblings of dst's ancestors. (Callers pass absolute paths, so the equality
-    // check is reliable.)
-    copy_tree_inner(src, dst, dst)
+    // Canonicalize both ends (resolving `.`/`..`/symlinks) so the
+    // destination-skip check in copy_tree_inner is reliable: if `dst` lives
+    // inside `src`, we must recognize it by exact path to skip *only* it —
+    // preventing unbounded recursion into our own output without over-skipping
+    // unrelated siblings. `dst` is created first so it can be canonicalized.
+    let src = src.canonicalize()?;
+    std::fs::create_dir_all(dst)?;
+    let dst = dst.canonicalize()?;
+    copy_tree_inner(&src, &dst, &dst)
 }
 
 fn copy_tree_inner(src: &Path, dst: &Path, dst_root: &Path) -> std::io::Result<()> {
