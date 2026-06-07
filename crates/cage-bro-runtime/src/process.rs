@@ -383,19 +383,26 @@ fn copy_tree(src: &Path, dst: &Path) -> std::io::Result<()> {
     std::fs::create_dir_all(dst)?;
     for entry in std::fs::read_dir(src)? {
         let entry = entry?;
+        let entry_path = entry.path();
+        // Skip any entry that is an ancestor of (or equal to) the destination,
+        // so a `dst` nested inside `src` can't make us recurse into our own
+        // output — runaway recursion / disk exhaustion.
+        if dst.starts_with(&entry_path) {
+            continue;
+        }
         let file_type = entry.file_type()?;
         let target = dst.join(entry.file_name());
         if file_type.is_dir() {
-            copy_tree(&entry.path(), &target)?;
+            copy_tree(&entry_path, &target)?;
         } else if file_type.is_symlink() {
             // Preserve symlinks as-is rather than following them.
             #[cfg(unix)]
             {
-                let link = std::fs::read_link(entry.path())?;
+                let link = std::fs::read_link(&entry_path)?;
                 std::os::unix::fs::symlink(link, &target)?;
             }
         } else {
-            std::fs::copy(entry.path(), &target)?;
+            std::fs::copy(&entry_path, &target)?;
         }
     }
     Ok(())

@@ -22,9 +22,17 @@
 use crate::traits::SandboxConfig;
 
 /// Read-only + execute system directories every interpreter needs.
+///
+/// `/proc` and `/sys` are included for runtime compatibility: Python/Node and
+/// common native libs (numpy, OpenBLAS, psutil) read `/proc/cpuinfo`,
+/// `/proc/meminfo`, `/sys/devices/system/cpu`, etc., and fully denying them
+/// breaks those workloads. This grants *read* access only — it does leak some
+/// cross-process info via `/proc/<pid>`, which is acceptable under cage-bro's
+/// threat model (process-level isolation, not an adversarial boundary — use a
+/// VM for that; see README).
 #[cfg(target_os = "linux")]
 const SYSTEM_RO_DIRS: &[&str] = &[
-    "/usr", "/bin", "/sbin", "/lib", "/lib64", "/etc", "/opt",
+    "/usr", "/bin", "/sbin", "/lib", "/lib64", "/etc", "/opt", "/proc", "/sys",
 ];
 
 /// World paths the child may read+write (interpreters, temp files, devices).

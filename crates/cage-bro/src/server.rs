@@ -25,18 +25,42 @@ pub async fn run(host: &str, port: u16) -> anyhow::Result<()> {
 
     tokio::fs::create_dir_all(&workspace).await?;
 
-    // The sandbox registry and snapshot index are in-memory, so any workspace
-    // or snapshot dirs left by a prior process are unreachable via the API after
-    // a restart. Prune them on startup to avoid an unbounded disk leak; the
-    // common case (dirs absent) is NotFound, which is not an error worth logging.
-    for sub in [".cage-bro/e2b", ".cage-bro/restored", ".cage-bro/snapshots"] {
-        let path = cwd.join(sub);
-        if let Err(e) = tokio::fs::remove_dir_all(&path).await {
-            if e.kind() != std::io::ErrorKind::NotFound {
-                tracing::error!(path = %path.display(), "failed to prune stale dir on startup: {}", e);
+    // Hold an advisory lock for this working directory. It auto-releases when
+    // the process exits, so it also tells us whether another cage-bro instance
+    // is already running here. We only prune (a destructive op) when we hold the
+    // lock — otherwise a second instance would clobber the first's live data.
+    let _ = tokio::fs::create_dir_all(cwd.join(".cage-bro")).await;
+    let instance_lock = std::fs::OpenOptions::new()
+        .create(true)
+        .write(true)
+        .truncate(false)
+        .open(cwd.join(".cage-bro/instance.lock"));
+    let sole_instance = match &instance_lock {
+        Ok(f) => f.try_lock().is_ok(),
+        Err(_) => true, // couldn't create the lock; assume sole and proceed
+    };
+
+    if sole_instance {
+        // The sandbox registry and snapshot index are in-memory, so any
+        // workspace/snapshot dirs left by a prior process are unreachable after
+        // a restart. Prune them to avoid an unbounded disk leak; absence
+        // (NotFound) is the common case and not worth logging.
+        for sub in [".cage-bro/e2b", ".cage-bro/restored", ".cage-bro/snapshots"] {
+            let path = cwd.join(sub);
+            if let Err(e) = tokio::fs::remove_dir_all(&path).await {
+                if e.kind() != std::io::ErrorKind::NotFound {
+                    tracing::error!(path = %path.display(), "failed to prune stale dir on startup: {}", e);
+                }
             }
         }
+    } else {
+        tracing::warn!(
+            dir = %cwd.display(),
+            "another cage-bro instance appears active here; skipping startup prune to avoid clobbering its data"
+        );
     }
+    // Hold the lock for the lifetime of the server.
+    let _instance_lock = instance_lock;
 
     let state = AppState {
         runtime: Arc::new(ProcessRuntime::new()),

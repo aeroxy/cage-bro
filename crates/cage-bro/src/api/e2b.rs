@@ -143,8 +143,16 @@ async fn kill(State(state): State<AppState>, Path(id): Path<String>) -> (StatusC
                     // from `uuid`: the runtime mints its own sandbox id, distinct
                     // from the throwaway id `create` used to name the dir.)
                     if let Some(ref ws) = sandbox.config.workspace_dir {
-                        if std::path::Path::new(ws).starts_with(e2b_base_dir()) {
-                            let _ = tokio::fs::remove_dir_all(ws).await;
+                        // Canonicalize both sides before the containment check so
+                        // it can't be defeated by `..` or symlinks in the stored
+                        // path — `remove_dir_all` must never escape the e2b base.
+                        if let (Ok(ws_real), Ok(base_real)) = (
+                            tokio::fs::canonicalize(ws).await,
+                            tokio::fs::canonicalize(e2b_base_dir()).await,
+                        ) {
+                            if ws_real.starts_with(&base_real) {
+                                let _ = tokio::fs::remove_dir_all(&ws_real).await;
+                            }
                         }
                     }
                     (StatusCode::NO_CONTENT, Json(json!({})))
