@@ -79,6 +79,7 @@ async fn run_mcp_stdio() -> Result<()> {
         sessions: std::sync::Arc::new(cage_bro_runtime::SessionManager::new(workspace.to_string_lossy().to_string())),
         browser: std::sync::Arc::new(crate::browser::BrowserManager::new()),
         jupyter: std::sync::Arc::new(cage_bro_code::JupyterKernelManager::new()),
+        workspace: workspace.clone(),
     };
 
     let mcp = crate::mcp::McpServer::new(state);
@@ -97,6 +98,7 @@ async fn run_mcp_http(port: u16) -> Result<()> {
         sessions: std::sync::Arc::new(cage_bro_runtime::SessionManager::new(workspace.to_string_lossy().to_string())),
         browser: std::sync::Arc::new(crate::browser::BrowserManager::new()),
         jupyter: std::sync::Arc::new(cage_bro_code::JupyterKernelManager::new()),
+        workspace: workspace.clone(),
     };
 
     let mcp = std::sync::Arc::new(crate::mcp::McpServer::new(state));

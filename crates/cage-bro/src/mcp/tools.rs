@@ -120,14 +120,18 @@ impl ToolRegistry {
         match name {
             "shell_exec" => {
                 let cmd = args["command"].as_str().ok_or_else(|| err("Missing command"))?;
-                let config = cage_bro_runtime::SandboxConfig::default();
+                let ws = state.workspace.to_string_lossy().to_string();
+                let config = cage_bro_runtime::SandboxConfig {
+                    workspace_dir: Some(ws.clone()),
+                    ..Default::default()
+                };
                 let sandbox = state.runtime.create(config).await.map_err(|e| err(&e.to_string()))?;
                 let parts = shell_words::split(cmd).map_err(|e| err(&e.to_string()))?;
                 let exec_cmd = cage_bro_runtime::ExecCommand {
                     program: parts[0].clone(),
                     args: parts[1..].to_vec(),
                     env: std::collections::HashMap::new(),
-                    working_dir: None,
+                    working_dir: Some(ws),
                     timeout_ms: None,
                 };
                 let result = state.runtime.exec(&sandbox, exec_cmd).await;
@@ -201,15 +205,19 @@ impl ToolRegistry {
             }
             "python_exec" => {
                 let code = args["code"].as_str().ok_or_else(|| err("Missing code"))?;
+                let ws = state.workspace.to_string_lossy().to_string();
                 let temp_file = format!("/tmp/cage_bro_mcp_{}.py", uuid::Uuid::new_v4());
                 tokio::fs::write(&temp_file, code).await.map_err(|e| err(&e.to_string()))?;
-                let config = cage_bro_runtime::SandboxConfig::default();
+                let config = cage_bro_runtime::SandboxConfig {
+                    workspace_dir: Some(ws.clone()),
+                    ..Default::default()
+                };
                 let sandbox = state.runtime.create(config).await.map_err(|e| err(&e.to_string()))?;
                 let exec_cmd = cage_bro_runtime::ExecCommand {
                     program: "python3".to_string(),
                     args: vec![temp_file.clone()],
                     env: std::collections::HashMap::new(),
-                    working_dir: None,
+                    working_dir: Some(ws),
                     timeout_ms: Some(30000),
                 };
                 let result = state.runtime.exec(&sandbox, exec_cmd).await;
@@ -222,15 +230,19 @@ impl ToolRegistry {
             }
             "node_exec" => {
                 let code = args["code"].as_str().ok_or_else(|| err("Missing code"))?;
+                let ws = state.workspace.to_string_lossy().to_string();
                 let temp_file = format!("/tmp/cage_bro_mcp_{}.js", uuid::Uuid::new_v4());
                 tokio::fs::write(&temp_file, code).await.map_err(|e| err(&e.to_string()))?;
-                let config = cage_bro_runtime::SandboxConfig::default();
+                let config = cage_bro_runtime::SandboxConfig {
+                    workspace_dir: Some(ws.clone()),
+                    ..Default::default()
+                };
                 let sandbox = state.runtime.create(config).await.map_err(|e| err(&e.to_string()))?;
                 let exec_cmd = cage_bro_runtime::ExecCommand {
                     program: "node".to_string(),
                     args: vec![temp_file.clone()],
                     env: std::collections::HashMap::new(),
-                    working_dir: None,
+                    working_dir: Some(ws),
                     timeout_ms: Some(30000),
                 };
                 let result = state.runtime.exec(&sandbox, exec_cmd).await;
