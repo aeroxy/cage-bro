@@ -108,6 +108,37 @@ async fn snapshot_when_dest_nested_in_source() {
     std::fs::remove_dir_all(&tmp).ok();
 }
 
+// destroy() cleans up a restored workspace, but must NOT touch a regular
+// (non-restored) workspace dir.
+#[tokio::test]
+async fn destroy_cleans_restored_dir_only() {
+    let tmp = std::env::temp_dir().join(format!("cagedestroy_{}", uuid::Uuid::new_v4()));
+    let ws = tmp.join("ws");
+    std::fs::create_dir_all(&ws).unwrap();
+    std::fs::write(ws.join("f.txt"), b"x").unwrap();
+
+    let rt = ProcessRuntime::with_base_dir(&tmp);
+    let cfg = SandboxConfig {
+        workspace_dir: Some(ws.to_string_lossy().to_string()),
+        ..SandboxConfig::default()
+    };
+    let original = rt.create(cfg).await.unwrap();
+    let snap = rt.snapshot(&original).await.unwrap();
+    let restored = rt.restore(&snap).await.unwrap();
+    let restored_ws = restored.config.workspace_dir.clone().unwrap();
+    assert!(std::path::Path::new(&restored_ws).exists());
+
+    // Destroying the restored sandbox removes its dir under .cage-bro/restored.
+    rt.destroy(&restored).await.unwrap();
+    assert!(!std::path::Path::new(&restored_ws).exists(), "restored dir should be cleaned");
+
+    // Destroying the original must NOT delete its (non-restored) workspace.
+    rt.destroy(&original).await.unwrap();
+    assert!(ws.join("f.txt").exists(), "regular workspace must be left intact");
+
+    std::fs::remove_dir_all(&tmp).ok();
+}
+
 #[tokio::test]
 async fn restore_preserves_non_default_config() {
     let tmp = std::env::temp_dir().join(format!("cagecfg_{}", uuid::Uuid::new_v4()));

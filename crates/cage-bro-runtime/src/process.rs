@@ -103,8 +103,31 @@ impl SandboxRuntime for ProcessRuntime {
     }
 
     async fn destroy(&self, sandbox: &Sandbox) -> Result<(), RuntimeError> {
-        let mut sandboxes = self.sandboxes.lock().await;
-        sandboxes.remove(&sandbox.id);
+        // Drop the registry entry and release the lock before any filesystem I/O.
+        let removed = self.sandboxes.lock().await.remove(&sandbox.id).is_some();
+
+        // If this sandbox owns a restored/forked workspace (created by `restore`
+        // under .cage-bro/restored), remove it so repeated restore→destroy cycles
+        // don't leak dirs. The cheap lexical pre-check keeps the common exec path
+        // (workspace = cwd/workspace, or e2b dirs) free of any syscall; the
+        // canonicalized strict-subdir check then guards the actual delete so it
+        // can't escape the restored base.
+        if removed {
+            if let Some(ref ws) = sandbox.config.workspace_dir {
+                let restore_base = self.base_dir.join(RESTORE_SUBDIR);
+                if Path::new(ws).starts_with(&restore_base) {
+                    if let (Ok(ws_real), Ok(base_real)) = (
+                        tokio::fs::canonicalize(ws).await,
+                        tokio::fs::canonicalize(&restore_base).await,
+                    ) {
+                        if ws_real != base_real && ws_real.starts_with(&base_real) {
+                            let _ = tokio::fs::remove_dir_all(&ws_real).await;
+                        }
+                    }
+                }
+            }
+        }
+
         tracing::info!(sandbox_id = %sandbox.id, "Sandbox destroyed");
         Ok(())
     }
