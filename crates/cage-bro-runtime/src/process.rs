@@ -248,6 +248,9 @@ async fn run_isolated(
     // is reaped, SIGKILL the whole process group so descendants don't orphan —
     // kill_on_drop only kills the direct child. Disarmed after the reap below so
     // it never targets a recycled PID.
+    // child.id() is Some right after spawn (tokio only returns None once the
+    // child has been reaped, which hasn't happened yet); the .map keeps it
+    // defensive — a None pgid would just make the guard a harmless no-op.
     #[cfg(unix)]
     let mut group_guard = GroupKillGuard { pgid: child.id().map(|p| p as libc::pid_t) };
 

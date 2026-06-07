@@ -243,7 +243,7 @@ curl -X POST http://localhost:8080/sandboxes -d '{"templateID":"base"}'   # crea
 curl http://localhost:8080/sandboxes                                       # list
 curl http://localhost:8080/sandboxes/<id>                                  # get
 curl -X DELETE http://localhost:8080/sandboxes/<id>                        # kill
-curl -X POST http://localhost:8080/sandboxes/<id>/timeout -d '{"timeout":30}'  # refresh timeout (acknowledged)
+curl -X POST http://localhost:8080/sandboxes/<id>/timeout                   # acknowledged no-op (value not processed; no auto-reap)
 # cage-bro extension: run a command inside a tracked sandbox
 curl -X POST http://localhost:8080/sandboxes/<id>/exec -d '{"command":"python3 -V"}'
 ```
