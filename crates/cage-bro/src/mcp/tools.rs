@@ -120,13 +120,18 @@ impl ToolRegistry {
         match name {
             "shell_exec" => {
                 let cmd = args["command"].as_str().ok_or_else(|| err("Missing command"))?;
+                // Validate before creating a sandbox: split() returns an empty
+                // vec for an empty/whitespace command, which would panic on parts[0].
+                let parts = shell_words::split(cmd).map_err(|e| err(&e.to_string()))?;
+                if parts.is_empty() {
+                    return Err(err("Empty command"));
+                }
                 let ws = state.workspace.to_string_lossy().to_string();
                 let config = cage_bro_runtime::SandboxConfig {
                     workspace_dir: Some(ws.clone()),
                     ..Default::default()
                 };
                 let sandbox = state.runtime.create(config).await.map_err(|e| err(&e.to_string()))?;
-                let parts = shell_words::split(cmd).map_err(|e| err(&e.to_string()))?;
                 let exec_cmd = cage_bro_runtime::ExecCommand {
                     program: parts[0].clone(),
                     args: parts[1..].to_vec(),
