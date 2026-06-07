@@ -237,12 +237,23 @@ async fn run_isolated(
     let out_task = child.stdout.take().map(|r| tokio::spawn(pump(r, stdout_buf.clone(), cap)));
     let err_task = child.stderr.take().map(|r| tokio::spawn(pump(r, stderr_buf.clone(), cap)));
 
+    // Helper: a wait() result is terminal — once it resolves (Ok or Err) the
+    // child is no longer ours to signal, so disarm the guard *before* acting on
+    // it. Otherwise an error return would drop the armed guard and could
+    // `killpg` a now-recycled PID.
     let (exit_code, timed_out) = match timeout {
         Some(dur) => match tokio::time::timeout(dur, child.wait()).await {
-            Ok(Ok(status)) => (status.code().unwrap_or(-1), false),
-            Ok(Err(e)) => return Err(RuntimeError::ExecutionFailed(format!("wait failed: {}", e))),
+            Ok(res) => {
+                #[cfg(unix)]
+                group_guard.disarm();
+                match res {
+                    Ok(status) => (status.code().unwrap_or(-1), false),
+                    Err(e) => return Err(RuntimeError::ExecutionFailed(format!("wait failed: {}", e))),
+                }
+            }
             Err(_elapsed) => {
-                // Kill the whole process group so same-group descendants die too.
+                // Timed out: kill the whole group so same-group descendants die,
+                // reap, then disarm (PID may be recycled after this).
                 #[cfg(unix)]
                 if let Some(pid) = child.id() {
                     unsafe { libc::killpg(pid as libc::pid_t, libc::SIGKILL); }
@@ -250,18 +261,21 @@ async fn run_isolated(
                 #[cfg(not(unix))]
                 let _ = child.start_kill();
                 let _ = child.wait().await;
+                #[cfg(unix)]
+                group_guard.disarm();
                 (-1, true)
             }
         },
-        None => match child.wait().await {
-            Ok(status) => (status.code().unwrap_or(-1), false),
-            Err(e) => return Err(RuntimeError::ExecutionFailed(format!("wait failed: {}", e))),
-        },
+        None => {
+            let res = child.wait().await;
+            #[cfg(unix)]
+            group_guard.disarm();
+            match res {
+                Ok(status) => (status.code().unwrap_or(-1), false),
+                Err(e) => return Err(RuntimeError::ExecutionFailed(format!("wait failed: {}", e))),
+            }
+        }
     };
-
-    // Child reaped — disarm the group-kill guard (the PID may now be recycled).
-    #[cfg(unix)]
-    group_guard.disarm();
 
     // The direct child has exited (or been killed). Give the readers a brief
     // grace to flush buffered output, then abort them — a pipe held open by an

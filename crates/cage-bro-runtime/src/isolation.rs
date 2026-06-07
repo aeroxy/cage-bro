@@ -226,14 +226,32 @@ mod linux {
         parent_fd: i32,
     }
 
+    // All args to the variadic `syscall` must be passed at register width
+    // (`c_long`). Rust does not promote variadic args, so a bare `u32`/`i32`/fd
+    // would be read by the glibc wrapper as a `long` with undefined upper bits.
     unsafe fn create_ruleset(attr: *const RulesetAttr, size: usize, flags: u32) -> libc::c_long {
-        libc::syscall(libc::SYS_landlock_create_ruleset, attr, size, flags)
+        libc::syscall(
+            libc::SYS_landlock_create_ruleset,
+            attr as usize as libc::c_long,
+            size as libc::c_long,
+            flags as libc::c_long,
+        )
     }
     unsafe fn add_rule(ruleset_fd: RawFd, rule_type: libc::c_int, attr: *const PathBeneathAttr) -> libc::c_long {
-        libc::syscall(libc::SYS_landlock_add_rule, ruleset_fd, rule_type, attr, 0u32)
+        libc::syscall(
+            libc::SYS_landlock_add_rule,
+            ruleset_fd as libc::c_long,
+            rule_type as libc::c_long,
+            attr as usize as libc::c_long,
+            0_i64 as libc::c_long,
+        )
     }
     unsafe fn restrict_self(ruleset_fd: RawFd) -> libc::c_long {
-        libc::syscall(libc::SYS_landlock_restrict_self, ruleset_fd, 0u32)
+        libc::syscall(
+            libc::SYS_landlock_restrict_self,
+            ruleset_fd as libc::c_long,
+            0_i64 as libc::c_long,
+        )
     }
 
     /// Grant `access` on `path` (a directory or file) within `ruleset_fd`.
