@@ -187,20 +187,16 @@ async fn exec(
         None => return not_found(&id),
     };
 
-    let parts = match shell_words::split(&req.command) {
-        Ok(p) if !p.is_empty() => p,
-        Ok(_) => return (StatusCode::BAD_REQUEST, Json(json!({ "message": "empty command" }))),
-        Err(e) => {
-            return (
-                StatusCode::BAD_REQUEST,
-                Json(json!({ "message": format!("parse error: {}", e) })),
-            )
-        }
-    };
+    if req.command.trim().is_empty() {
+        return (StatusCode::BAD_REQUEST, Json(json!({ "message": "empty command" })));
+    }
 
+    // Run via a shell so pipes / redirects / env-expansion work, matching E2B's
+    // `commands.run` semantics. The whole shell tree runs under the sandbox's
+    // isolation policy (Landlock + rlimits + process group).
     let cmd = ExecCommand {
-        program: parts[0].clone(),
-        args: parts[1..].to_vec(),
+        program: "sh".to_string(),
+        args: vec!["-c".to_string(), req.command.clone()],
         env: std::collections::HashMap::new(),
         working_dir: None,
         timeout_ms: req.timeout_ms,

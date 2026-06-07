@@ -55,6 +55,30 @@ async fn snapshot_restore_roundtrip() {
     std::fs::remove_dir_all(&tmp).ok();
 }
 
+// A descendant that outlives the direct child and keeps stdout open must not
+// make exec hang: once the direct child exits we drain briefly, then stop.
+#[tokio::test]
+async fn exec_does_not_hang_on_descendant_holding_stdout() {
+    let rt = ProcessRuntime::new();
+    let sb = rt.create(SandboxConfig::default()).await.unwrap();
+    // `sh` backgrounds a 5s sleep (inheriting stdout), prints, then exits.
+    let cmd = ExecCommand {
+        program: "sh".into(),
+        args: vec!["-c".into(), "sleep 5 & echo done".into()],
+        env: HashMap::new(),
+        working_dir: None,
+        timeout_ms: None,
+    };
+    let start = std::time::Instant::now();
+    let r = rt.exec(&sb, cmd).await.unwrap();
+    assert!(
+        start.elapsed().as_secs() < 3,
+        "exec hung waiting on a descendant-held pipe ({:?})",
+        start.elapsed()
+    );
+    assert!(r.stdout.contains("done"), "stdout: {:?}", r.stdout);
+}
+
 #[tokio::test]
 async fn restore_preserves_non_default_config() {
     let tmp = std::env::temp_dir().join(format!("cagecfg_{}", uuid::Uuid::new_v4()));

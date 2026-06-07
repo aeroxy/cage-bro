@@ -20,11 +20,18 @@ pub struct AppState {
 }
 
 pub async fn run(host: &str, port: u16) -> anyhow::Result<()> {
-    let workspace = std::env::current_dir()
-        .unwrap_or_else(|_| std::path::PathBuf::from("."))
-        .join("workspace");
+    let cwd = std::env::current_dir().unwrap_or_else(|_| std::path::PathBuf::from("."));
+    let workspace = cwd.join("workspace");
 
     tokio::fs::create_dir_all(&workspace).await?;
+
+    // The sandbox registry is in-memory, so ephemeral workspace dirs left by a
+    // prior process are unreachable via the API. Prune them on startup to avoid
+    // an unbounded disk leak across restarts. (User snapshots under
+    // .cage-bro/snapshots are intentionally preserved.)
+    for sub in [".cage-bro/e2b", ".cage-bro/restored"] {
+        let _ = tokio::fs::remove_dir_all(cwd.join(sub)).await;
+    }
 
     let state = AppState {
         runtime: Arc::new(ProcessRuntime::new()),
