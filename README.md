@@ -47,7 +47,7 @@ Python, Node.js, and Jupyter are the bundled runtimes — they start instantly w
 cage-bro was designed with regulated industries in mind. If you're building AI agent systems in finance, you need:
 
 - **Self-hosted, on-prem execution** — data can't leave your network. No cloud dependencies, no third-party telemetry.
-- **Sandboxed code execution** — agents running untrusted code (backtesting, data analysis, report generation) need isolation. Each sandbox is its own process with landlock/seccomp boundaries.
+- **Sandboxed code execution** — agents running untrusted code (backtesting, data analysis, report generation) need isolation. On Linux each exec runs under [Landlock](https://docs.kernel.org/userspace-api/landlock.html) filesystem confinement (restricted to its workspace + a read-only system allowlist) plus `rlimit` resource caps (memory, CPU time, file size, process/fd count); on other platforms the `rlimit` caps still apply. See [Isolation model](#isolation-model) for the exact, honest threat model — including what is *not* yet covered (seccomp syscall filtering, network isolation).
 - **Auditability** — every action goes through the REST API. Structured inputs, structured outputs. Easy to log, easy to replay, easy to audit.
 - **Human-in-the-loop integration** — pair with an approval layer before sensitive operations. The agent proposes, a human approves, cage-bro executes.
 - **MCP + structured tooling** — agents interact via typed tool calls, not raw shell access. Policy agents, compliance agents, and trading agents all get the same clean interface.
@@ -74,6 +74,9 @@ open http://localhost:8080
 | **Browser** | Obscura headless browser (stealth mode, CDP) |
 | **Code** | Python, Node.js (stateless) + Jupyter (stateful) |
 | **Files** | Read, write, edit, list, search with sandbox scope |
+| **Isolation** | Per-exec Landlock filesystem confinement (Linux) + `rlimit` resource caps + exec timeouts |
+| **Snapshots** | Filesystem snapshot / restore / fork of a sandbox workspace |
+| **E2B-compatible** | Drop-in sandbox lifecycle REST API (create/list/get/kill) |
 | **MCP** | Built-in MCP server for Claude Desktop, Cursor, etc. |
 | **Dashboard** | Web UI with terminal, code editor, file browser |
 
@@ -197,12 +200,69 @@ The web dashboard is embedded in the binary and available at `http://localhost:8
 | `/#/files` | File browser/editor |
 | `/#/browser` | Browser view |
 
+## Isolation model
+
+cage-bro runs each `shell_exec` / `code` invocation as a child process hardened
+*before* `exec(2)`. Be precise about what that buys you:
+
+| Layer | Linux | macOS / other |
+|---|---|---|
+| **Filesystem confinement** (Landlock ≥ 5.13) — child may read+execute a system allowlist (`/usr`, `/bin`, `/lib`, `/etc`, …) and read+write only its workspace + `/tmp`; everything else is denied | ✅ | ❌ (not available) |
+| **Resource limits** (`rlimit`) — address space, CPU-seconds, file size, process count, open files | ✅ | ✅ |
+| **Execution timeout** — runaway processes are killed | ✅ | ✅ |
+| **Syscall filtering** (seccomp) | deploy layer | deploy layer |
+| **Network isolation** (egress filtering) | deploy layer | deploy layer |
+
+**Deploy-layer concerns (by design).** cage-bro does not implement syscall
+filtering or network egress controls itself. These are expected to be enforced by
+the environment cage-bro runs in — the surrounding VM, bare-metal host, or
+container — according to your organization's security policies (e.g. host
+firewall / egress allowlists, network segmentation, seccomp/AppArmor profiles on
+the container). Run cage-bro inside that locked-down boundary; it provides
+density + agent tooling within it.
+
+**What this is *not*:** cage-bro is process-level isolation on a shared kernel, not
+a microVM. It is not a substitute for kernel-level isolation when running
+genuinely adversarial code. For that, run cage-bro inside a VM or microVM (e.g.
+Firecracker, gVisor, or a KVM-based sandbox) — you get a hardware boundary at the
+VM level and cage-bro's density + tooling inside it. If your Landlock kernel is
+unavailable, exec degrades to resource-limits-only and logs a warning.
+
+## E2B compatibility
+
+cage-bro exposes an E2B-compatible **sandbox lifecycle** REST API at the server
+root, so the E2B SDK's orchestration calls work by pointing `E2B_API_URL` at a
+cage-bro server:
+
+```bash
+curl -X POST http://localhost:8080/sandboxes -d '{"templateID":"base"}'   # create
+curl http://localhost:8080/sandboxes                                       # list
+curl http://localhost:8080/sandboxes/<id>                                  # get
+curl -X DELETE http://localhost:8080/sandboxes/<id>                        # kill
+# cage-bro extension: run a command inside a tracked sandbox
+curl -X POST http://localhost:8080/sandboxes/<id>/exec -d '{"command":"python3 -V"}'
+```
+
+**Scope:** this is the orchestration half of the E2B protocol. The in-sandbox
+`envd` RPC layer (per-sandbox filesystem/process/pty over Connect-RPC, reached
+via a per-sandbox hostname) is not implemented yet, so the official SDK's
+*in-sandbox* calls do not round-trip. Use the `/sandboxes/{id}/exec` extension or
+the native `/v1/*` API to run code today.
+
+## Snapshots
+
+`snapshot` captures a sandbox's workspace tree to a local store; `restore`
+materializes it into a fresh workspace and returns a new sandbox. Restoring the
+same snapshot repeatedly forks independent copies — useful for checkpoint /
+rollback / parallel-exploration (e.g. RL rollouts) agent workflows. This is
+**filesystem-state only** — process and memory state are not preserved.
+
 ## Architecture
 
 ```
 cage-bro (single Rust binary)
-├── Axum HTTP server (REST API + dashboard)
-├── ProcessRuntime (PTY shell, landlock, seccomp)
+├── Axum HTTP server (REST API + E2B lifecycle + dashboard)
+├── ProcessRuntime (exec isolation: Landlock + rlimits, snapshots)
 ├── BrowserManager (Obscura sidecar via CDP)
 ├── JupyterKernelManager (ipykernel via jupyter_client)
 ├── MCP Server (stdio + HTTP/SSE)

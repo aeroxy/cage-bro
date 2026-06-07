@@ -25,10 +25,6 @@ enum Commands {
         /// Host to bind to
         #[arg(long, default_value = "0.0.0.0")]
         host: String,
-
-        /// Runtime mode: process or microvm
-        #[arg(long, default_value = "process")]
-        runtime: String,
     },
 
     /// Start MCP server (for Claude Desktop, Cursor, etc.)
@@ -50,17 +46,8 @@ pub async fn run() -> Result<()> {
     let cli = Cli::parse();
 
     match cli.command {
-        Commands::Serve {
-            port,
-            host,
-            runtime,
-        } => {
-            tracing::info!(
-                host = %host,
-                port = port,
-                runtime = %runtime,
-                "Starting cage-bro"
-            );
+        Commands::Serve { port, host } => {
+            tracing::info!(host = %host, port = port, "Starting cage-bro");
             server::run(&host, port).await?;
         }
         Commands::Mcp { http, port } => {
