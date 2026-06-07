@@ -259,10 +259,11 @@ rollback / parallel-exploration (e.g. RL rollouts) agent workflows. This is
 **filesystem-state only** — process and memory state are not preserved.
 
 The snapshot index is **in-memory**, consistent with the rest of the server
-(the sandbox registry is in-memory too) — it does not survive a process
-restart. Snapshot *directories* persist on disk under `.cage-bro/snapshots/`,
-but the index needed to `restore` them is rebuilt only for the current process
-lifetime. Treat snapshots as scoped to a running server.
+(the sandbox registry is in-memory too): snapshots are **scoped to a running
+server** and do not survive a restart. Because the index can't be rebuilt from
+disk, stale snapshot directories under `.cage-bro/snapshots/` are pruned on
+startup along with other ephemeral state, so an interrupted server never leaks
+unreachable snapshot data.
 
 ## Architecture
 

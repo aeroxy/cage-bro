@@ -136,11 +136,17 @@ async fn kill(State(state): State<AppState>, Path(id): Path<String>) -> (StatusC
         Some(uuid) => match state.runtime.get(&uuid).await {
             Some(sandbox) => match state.runtime.destroy(&sandbox).await {
                 Ok(()) => {
-                    // Delete only the e2b-managed dir for this id, derived the
-                    // same way `create` builds it — never `sandbox.config`'s
-                    // path. This makes arbitrary-path deletion impossible even
-                    // if a registry sandbox carries a foreign/shared workspace.
-                    let _ = tokio::fs::remove_dir_all(e2b_workspace_dir(&uuid)).await;
+                    // Delete the sandbox's actual workspace dir, but only if it
+                    // lives under the e2b-managed base — so a registry sandbox
+                    // carrying a foreign/shared workspace path can never trigger
+                    // deletion outside `.cage-bro/e2b`. (We can't derive the dir
+                    // from `uuid`: the runtime mints its own sandbox id, distinct
+                    // from the throwaway id `create` used to name the dir.)
+                    if let Some(ref ws) = sandbox.config.workspace_dir {
+                        if std::path::Path::new(ws).starts_with(e2b_base_dir()) {
+                            let _ = tokio::fs::remove_dir_all(ws).await;
+                        }
+                    }
                     (StatusCode::NO_CONTENT, Json(json!({})))
                 }
                 Err(e) => {
@@ -228,14 +234,18 @@ async fn exec(
     }
 }
 
-/// The cage-bro-managed workspace directory for an E2B sandbox id. `create` and
-/// `kill` both derive the path here, so `kill` can only ever delete a directory
-/// that `create` owns — never an arbitrary or foreign `workspace_dir`.
-fn e2b_workspace_dir(id: &Uuid) -> std::path::PathBuf {
+/// Base directory under which every E2B sandbox workspace lives. `kill` only
+/// deletes paths under this prefix, bounding `remove_dir_all` to cage-bro's own
+/// directories.
+fn e2b_base_dir() -> std::path::PathBuf {
     std::env::current_dir()
         .unwrap_or_else(|_| ".".into())
         .join(".cage-bro/e2b")
-        .join(id.to_string())
+}
+
+/// The workspace directory `create` allocates for a new E2B sandbox.
+fn e2b_workspace_dir(id: &Uuid) -> std::path::PathBuf {
+    e2b_base_dir().join(id.to_string())
 }
 
 fn parse_id(id: &str) -> Option<Uuid> {
