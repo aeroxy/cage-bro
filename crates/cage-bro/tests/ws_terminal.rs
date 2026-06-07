@@ -9,7 +9,12 @@ async fn test_shell_exec_and_ws() {
     let state = cage_bro::server::AppState {
         runtime: std::sync::Arc::new(cage_bro_runtime::ProcessRuntime::new()),
         filesystem: std::sync::Arc::new(cage_bro_runtime::LocalFilesystem::new(&workspace)),
-        sessions: std::sync::Arc::new(cage_bro_runtime::SessionManager::new()),
+        sessions: std::sync::Arc::new(cage_bro_runtime::SessionManager::new(
+            workspace.to_string_lossy().to_string(),
+        )),
+        browser: std::sync::Arc::new(cage_bro::browser::BrowserManager::new()),
+        jupyter: std::sync::Arc::new(cage_bro_code::JupyterKernelManager::new()),
+        workspace: workspace.clone(),
     };
 
     let app = axum::Router::new()

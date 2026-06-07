@@ -17,6 +17,8 @@ pub struct AppState {
     pub sessions: Arc<SessionManager>,
     pub browser: Arc<BrowserManager>,
     pub jupyter: Arc<JupyterKernelManager>,
+    /// Workspace directory all sandboxed exec/code runs are confined to.
+    pub workspace: std::path::PathBuf,
 }
 
 pub async fn run(host: &str, port: u16) -> anyhow::Result<()> {
@@ -68,6 +70,7 @@ pub async fn run(host: &str, port: u16) -> anyhow::Result<()> {
         sessions: Arc::new(SessionManager::new(workspace.to_string_lossy().to_string())),
         browser: Arc::new(BrowserManager::new()),
         jupyter: Arc::new(JupyterKernelManager::new()),
+        workspace: workspace.clone(),
     };
 
     let api_routes = Router::new()
