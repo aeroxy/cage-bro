@@ -14,6 +14,7 @@
 use axum::{
     extract::{Path, State},
     http::StatusCode,
+    response::{IntoResponse, Response},
     routing::{get, post},
     Json, Router,
 };
@@ -131,7 +132,7 @@ async fn get_one(
     }
 }
 
-async fn kill(State(state): State<AppState>, Path(id): Path<String>) -> (StatusCode, Json<Value>) {
+async fn kill(State(state): State<AppState>, Path(id): Path<String>) -> Response {
     match parse_id(&id) {
         Some(uuid) => match state.runtime.get(&uuid).await {
             Some(sandbox) => match state.runtime.destroy(&sandbox).await {
@@ -157,7 +158,8 @@ async fn kill(State(state): State<AppState>, Path(id): Path<String>) -> (StatusC
                             }
                         }
                     }
-                    (StatusCode::NO_CONTENT, Json(json!({})))
+                    // 204 must not carry a body.
+                    StatusCode::NO_CONTENT.into_response()
                 }
                 Err(e) => {
                     tracing::error!(sandbox_id = %id, "destroy failed: {}", e);
@@ -165,28 +167,27 @@ async fn kill(State(state): State<AppState>, Path(id): Path<String>) -> (StatusC
                         StatusCode::INTERNAL_SERVER_ERROR,
                         Json(json!({ "code": 500, "message": format!("destroy failed: {}", e) })),
                     )
+                        .into_response()
                 }
             },
-            None => not_found(&id),
+            None => not_found(&id).into_response(),
         },
-        None => bad_id(&id),
+        None => bad_id(&id).into_response(),
     }
 }
 
-async fn set_timeout(
-    State(state): State<AppState>,
-    Path(id): Path<String>,
-) -> (StatusCode, Json<Value>) {
+async fn set_timeout(State(state): State<AppState>, Path(id): Path<String>) -> Response {
     let uuid = match parse_id(&id) {
         Some(u) => u,
-        None => return bad_id(&id),
+        None => return bad_id(&id).into_response(),
     };
     if state.runtime.get(&uuid).await.is_none() {
-        return not_found(&id);
+        return not_found(&id).into_response();
     }
     // Acknowledged; cage-bro does not auto-reap sandboxes yet.
     tracing::debug!(sandbox_id = %id, "E2B set_timeout (no-op ack)");
-    (StatusCode::NO_CONTENT, Json(json!({})))
+    // 204 must not carry a body.
+    StatusCode::NO_CONTENT.into_response()
 }
 
 #[derive(Deserialize)]
