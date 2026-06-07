@@ -92,10 +92,14 @@ async fn create(
             tracing::info!(sandbox_id = %sandbox.id, %template_id, "E2B sandbox created");
             (StatusCode::CREATED, Json(to_e2b(&sandbox, &template_id)))
         }
-        Err(e) => (
-            StatusCode::INTERNAL_SERVER_ERROR,
-            Json(json!({ "code": 500, "message": format!("create failed: {}", e) })),
-        ),
+        Err(e) => {
+            // Don't leak the workspace dir we just created if the runtime fails.
+            let _ = tokio::fs::remove_dir_all(&workspace).await;
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(json!({ "code": 500, "message": format!("create failed: {}", e) })),
+            )
+        }
     }
 }
 

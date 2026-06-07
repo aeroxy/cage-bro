@@ -120,10 +120,9 @@ impl SandboxRuntime for ProcessRuntime {
         let dest = self.base_dir.join(SNAPSHOT_SUBDIR).join(snapshot_id.to_string());
         let src = PathBuf::from(&workspace);
 
-        tokio::task::spawn_blocking(move || copy_tree(&src, &dest))
+        copy_tree_async(src, dest.clone())
             .await
-            .map_err(|e| RuntimeError::SnapshotFailed(format!("join error: {}", e)))?
-            .map_err(|e| RuntimeError::SnapshotFailed(e.to_string()))?;
+            .map_err(RuntimeError::SnapshotFailed)?;
 
         let snapshot = Snapshot {
             id: snapshot_id,
@@ -132,7 +131,6 @@ impl SandboxRuntime for ProcessRuntime {
             metadata: HashMap::from([("source".into(), workspace)]),
         };
 
-        let dest = self.base_dir.join(SNAPSHOT_SUBDIR).join(snapshot_id.to_string());
         self.snapshots.lock().await.insert(
             snapshot_id,
             SnapshotRecord { path: dest, config: sandbox.config.clone() },
@@ -158,11 +156,9 @@ impl SandboxRuntime for ProcessRuntime {
         let dest = self.base_dir.join(RESTORE_SUBDIR).join(new_id.to_string());
         let src = record.path.clone();
 
-        let dest_for_copy = dest.clone();
-        tokio::task::spawn_blocking(move || copy_tree(&src, &dest_for_copy))
+        copy_tree_async(src, dest.clone())
             .await
-            .map_err(|e| RuntimeError::RestoreFailed(format!("join error: {}", e)))?
-            .map_err(|e| RuntimeError::RestoreFailed(e.to_string()))?;
+            .map_err(RuntimeError::RestoreFailed)?;
 
         // Reuse the snapshotted sandbox's config, repointing only the workspace.
         let mut config = record.config.clone();
@@ -225,6 +221,13 @@ async fn run_isolated(
         .map_err(|e| RuntimeError::ExecutionFailed(format!("spawn failed: {}", e)))?;
     drop(guard);
 
+    // If this future is cancelled (e.g. the client disconnects) before the child
+    // is reaped, SIGKILL the whole process group so descendants don't orphan —
+    // kill_on_drop only kills the direct child. Disarmed after the reap below so
+    // it never targets a recycled PID.
+    #[cfg(unix)]
+    let mut group_guard = GroupKillGuard { pgid: child.id().map(|p| p as libc::pid_t) };
+
     // Drain stdout/stderr concurrently into shared buffers via async tasks (no
     // OS threads). Reads are cancellable, so a descendant that escapes the
     // process group and holds the pipe open can't make us hang or leak.
@@ -256,6 +259,10 @@ async fn run_isolated(
         },
     };
 
+    // Child reaped — disarm the group-kill guard (the PID may now be recycled).
+    #[cfg(unix)]
+    group_guard.disarm();
+
     // The direct child has exited (or been killed). Give the readers a brief
     // grace to flush buffered output, then abort them — a pipe held open by an
     // escaped descendant must not block us. Aborting captures whatever made it
@@ -285,6 +292,33 @@ async fn run_isolated(
     })
 }
 
+/// RAII guard that SIGKILLs the child's whole process group if dropped while
+/// still armed — e.g. when the exec future is cancelled mid-flight. Disarmed
+/// once the child is reaped, so it never targets a recycled PID. (The child is
+/// put in its own group via `process_group(0)`, so its PID is the group id.)
+#[cfg(unix)]
+struct GroupKillGuard {
+    pgid: Option<libc::pid_t>,
+}
+
+#[cfg(unix)]
+impl GroupKillGuard {
+    fn disarm(&mut self) {
+        self.pgid = None;
+    }
+}
+
+#[cfg(unix)]
+impl Drop for GroupKillGuard {
+    fn drop(&mut self) {
+        if let Some(pgid) = self.pgid {
+            unsafe {
+                libc::killpg(pgid, libc::SIGKILL);
+            }
+        }
+    }
+}
+
 /// Read a child pipe into `sink` (capped at `cap` bytes) until EOF, error, or
 /// the cap is reached. Runs as a tokio task; aborting it is clean (no thread).
 async fn pump<R>(mut reader: R, sink: Arc<std::sync::Mutex<Vec<u8>>>, cap: usize)
@@ -307,6 +341,25 @@ where
                     break;
                 }
             }
+        }
+    }
+}
+
+/// Copy `src` → `dst` on a blocking thread, removing any partially-copied
+/// `dst` if the copy fails so a failed snapshot/restore leaves no orphan dir.
+/// Returns a stringified error suitable for wrapping in a `RuntimeError`.
+async fn copy_tree_async(src: PathBuf, dst: PathBuf) -> Result<(), String> {
+    let dst_for_copy = dst.clone();
+    let result = tokio::task::spawn_blocking(move || copy_tree(&src, &dst_for_copy)).await;
+    match result {
+        Ok(Ok(())) => Ok(()),
+        Ok(Err(e)) => {
+            let _ = tokio::fs::remove_dir_all(&dst).await;
+            Err(e.to_string())
+        }
+        Err(e) => {
+            let _ = tokio::fs::remove_dir_all(&dst).await;
+            Err(format!("join error: {}", e))
         }
     }
 }
