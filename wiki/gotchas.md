@@ -20,6 +20,26 @@ curl -X POST http://localhost:8080/v1/file/read -d '{"path": "../../etc/passwd"}
 
 ---
 
+## Shell/Code Confinement Is Linux-Only (Landlock)
+
+The `file_*` tools are workspace-scoped on **every** platform (path escapes rejected). But `shell_exec`/`python_exec`/`node_exec` are *filesystem*-confined to the workspace only on **Linux**, via Landlock (kernel ≥ 5.13). On **macOS** there is no Landlock — they run with resource limits and the correct working directory, but a shell command **can read outside the workspace**.
+
+**Gotcha**: if you run multiple agents on one macOS box, isolate them with **separate OS users** (file permissions), not by relying on shell confinement. On Linux you get both Landlock and rlimits. See the README "Isolation model" and [`../GUIDE.md`](../GUIDE.md).
+
+---
+
+## Windows Is Not Supported
+
+cage-bro targets **Linux and macOS** only. It won't build/run on Windows. (Isolation relies on Unix process primitives.)
+
+---
+
+## One Instance Per Working Directory
+
+`cage-bro serve` takes an advisory lock on its working directory. A second instance started in the same directory will run but **skips startup cleanup** to avoid clobbering the first's data. Give each agent/instance its own directory.
+
+---
+
 ## `file_edit` Only Replaces the First Occurrence
 
 The edit endpoint uses `replacen(..., 1)` -- it replaces only the **first** match of `old_text` with `new_text`. If the string appears multiple times, only the first one changes.
@@ -148,9 +168,11 @@ Session state is in-memory. If cage-bro restarts, all sessions are lost. There's
 
 ---
 
-## `shell_exec` Timeout Behavior
+## `shell_exec` Timeout & Output Behavior
 
-When `timeout_ms` is set, the command is killed after the timeout. However, the timeout applies to the entire command including process startup. Fast commands that spawn long-running children may not be properly timed out if the parent exits quickly.
+When `timeout_ms` is set, the command runs in its **own process group**, and on timeout the whole group is killed (SIGKILL) — so child processes are terminated too, not just the direct child. A process that detaches with `setsid` escapes the group and can outlive the call as an orphan (reaped by init); it won't hang the request.
+
+Captured `stdout`/`stderr` is **capped at ~10 MB** per call to bound server memory against runaway output; output past the cap is dropped.
 
 ---
 

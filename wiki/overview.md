@@ -10,8 +10,8 @@ cage-bro gives AI agents a sandboxed playground: a PTY shell, headless browser, 
 
 ```
 cage-bro (single Rust binary)
-├── Axum HTTP server (REST API + embedded dashboard)
-├── ProcessRuntime (PTY shell, landlock, seccomp)
+├── Axum HTTP server (REST API + E2B lifecycle + embedded dashboard)
+├── ProcessRuntime (exec isolation: Landlock [Linux] + rlimits, snapshots)
 ├── BrowserManager (Obscura headless browser via CDP)
 ├── JupyterKernelManager (ipykernel via jupyter_client)
 ├── MCP Server (stdio + HTTP/SSE transport)
