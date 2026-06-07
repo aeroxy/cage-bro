@@ -79,6 +79,35 @@ async fn exec_does_not_hang_on_descendant_holding_stdout() {
     assert!(r.stdout.contains("done"), "stdout: {:?}", r.stdout);
 }
 
+// When the snapshot store lives *inside* the workspace being snapshotted (dst
+// nested in src), copy must terminate (no infinite recursion) and still capture
+// sibling files — not skip the whole subtree.
+#[tokio::test]
+async fn snapshot_when_dest_nested_in_source() {
+    let tmp = std::env::temp_dir().join(format!("cagenest_{}", uuid::Uuid::new_v4()));
+    std::fs::create_dir_all(&tmp).unwrap();
+    std::fs::write(tmp.join("keep.txt"), b"data").unwrap();
+
+    // base_dir == workspace, so dst (base/.cage-bro/snapshots/<id>) is inside src.
+    let rt = ProcessRuntime::with_base_dir(&tmp);
+    let cfg = SandboxConfig {
+        workspace_dir: Some(tmp.to_string_lossy().to_string()),
+        ..SandboxConfig::default()
+    };
+    let sb = rt.create(cfg).await.unwrap();
+
+    // Must complete quickly — a regression here would recurse without bound.
+    let snap = tokio::time::timeout(std::time::Duration::from_secs(10), rt.snapshot(&sb))
+        .await
+        .expect("snapshot did not terminate (recursion regression?)")
+        .unwrap();
+
+    let snap_dir = tmp.join(".cage-bro/snapshots").join(snap.id.to_string());
+    assert!(snap_dir.join("keep.txt").exists(), "sibling file should be captured");
+
+    std::fs::remove_dir_all(&tmp).ok();
+}
+
 #[tokio::test]
 async fn restore_preserves_non_default_config() {
     let tmp = std::env::temp_dir().join(format!("cagecfg_{}", uuid::Uuid::new_v4()));

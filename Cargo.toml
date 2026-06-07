@@ -9,6 +9,8 @@ members = [
 [workspace.package]
 version = "0.1.1"
 edition = "2021"
+# Requires std file locking (File::try_lock), stabilized in Rust 1.89.
+rust-version = "1.89"
 authors = ["Aero <aero.windwalker@gmail.com>"]
 repository = "https://github.com/aeroxy/cage-bro"
 license = "Apache-2.0"

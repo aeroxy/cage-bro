@@ -380,20 +380,27 @@ async fn copy_tree_async(src: PathBuf, dst: PathBuf) -> Result<(), String> {
 
 /// Recursively copy a directory tree from `src` to `dst`, creating `dst`.
 fn copy_tree(src: &Path, dst: &Path) -> std::io::Result<()> {
+    // `dst` is threaded unchanged as `dst_root` so that, if `dst` lives inside
+    // `src`, we skip *exactly* the destination directory when we reach it —
+    // preventing recursion into our own output without over-skipping unrelated
+    // siblings of dst's ancestors. (Callers pass absolute paths, so the equality
+    // check is reliable.)
+    copy_tree_inner(src, dst, dst)
+}
+
+fn copy_tree_inner(src: &Path, dst: &Path, dst_root: &Path) -> std::io::Result<()> {
     std::fs::create_dir_all(dst)?;
     for entry in std::fs::read_dir(src)? {
         let entry = entry?;
         let entry_path = entry.path();
-        // Skip any entry that is an ancestor of (or equal to) the destination,
-        // so a `dst` nested inside `src` can't make us recurse into our own
-        // output — runaway recursion / disk exhaustion.
-        if dst.starts_with(&entry_path) {
+        // Skip exactly the destination dir if we encounter it nested in `src`.
+        if entry_path == dst_root {
             continue;
         }
         let file_type = entry.file_type()?;
         let target = dst.join(entry.file_name());
         if file_type.is_dir() {
-            copy_tree(&entry_path, &target)?;
+            copy_tree_inner(&entry_path, &target, dst_root)?;
         } else if file_type.is_symlink() {
             // Preserve symlinks as-is rather than following them.
             #[cfg(unix)]
