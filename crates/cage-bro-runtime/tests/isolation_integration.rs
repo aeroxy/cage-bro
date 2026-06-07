@@ -48,9 +48,37 @@ async fn snapshot_restore_roundtrip() {
     std::fs::write(ws.join("hello.txt"), b"v2-mutated").unwrap();
 
     let restored = rt.restore(&snap).await.unwrap();
-    let rws = restored.config.workspace_dir.unwrap();
+    let rws = restored.config.workspace_dir.clone().unwrap();
     let content = std::fs::read_to_string(format!("{}/hello.txt", rws)).unwrap();
     assert_eq!(content, "v1", "restored snapshot should hold pre-mutation state");
+
+    std::fs::remove_dir_all(&tmp).ok();
+}
+
+#[tokio::test]
+async fn restore_preserves_non_default_config() {
+    let tmp = std::env::temp_dir().join(format!("cagecfg_{}", uuid::Uuid::new_v4()));
+    let ws = tmp.join("ws");
+    std::fs::create_dir_all(&ws).unwrap();
+
+    let rt = ProcessRuntime::with_base_dir(&tmp);
+    let cfg = SandboxConfig {
+        memory_limit_mb: Some(256),
+        cpu_limit_percent: Some(25),
+        network_enabled: false,
+        workspace_dir: Some(ws.to_string_lossy().to_string()),
+        ..SandboxConfig::default()
+    };
+    let sb = rt.create(cfg).await.unwrap();
+    let snap = rt.snapshot(&sb).await.unwrap();
+    let restored = rt.restore(&snap).await.unwrap();
+
+    // Non-default resource/network settings survive the round-trip.
+    assert_eq!(restored.config.memory_limit_mb, Some(256));
+    assert_eq!(restored.config.cpu_limit_percent, Some(25));
+    assert!(!restored.config.network_enabled);
+    // ...but the workspace is repointed to the freshly restored dir.
+    assert_ne!(restored.config.workspace_dir, sb.config.workspace_dir);
 
     std::fs::remove_dir_all(&tmp).ok();
 }

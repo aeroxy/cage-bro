@@ -99,8 +99,12 @@ impl Isolation {
         unsafe {
             command.pre_exec(move || {
                 set_rlimits(mem, cpu, fsize);
+                // Fail *closed*: if Landlock was available and we built a ruleset
+                // but enforcement fails, abort the exec rather than running the
+                // child unconfined. (An unavailable Landlock yields fd == -1,
+                // which enforce() treats as an intentional rlimits-only skip.)
                 #[cfg(target_os = "linux")]
-                linux::enforce(ruleset_fd);
+                linux::enforce(ruleset_fd)?;
                 Ok(())
             });
         }
@@ -285,17 +289,25 @@ mod linux {
         }
     }
 
-    /// Enforce the ruleset in the child. Async-signal-safe: two raw syscalls,
-    /// no allocation. A `-1` fd means Landlock was unavailable — skip.
-    pub fn enforce(ruleset_fd: RawFd) {
+    /// Enforce the ruleset in the child. Async-signal-safe: a few raw syscalls
+    /// and an alloc-free `io::Error` (built from `errno`). A `-1` fd means
+    /// Landlock was unavailable — an intentional rlimits-only skip, returns Ok.
+    /// Any *enforcement* failure returns Err so the `pre_exec` closure aborts
+    /// the exec instead of running the child unconfined.
+    pub fn enforce(ruleset_fd: RawFd) -> std::io::Result<()> {
         if ruleset_fd < 0 {
-            return;
+            return Ok(());
         }
         unsafe {
             // Landlock requires no_new_privs to be set first.
-            libc::prctl(libc::PR_SET_NO_NEW_PRIVS, 1, 0, 0, 0);
-            restrict_self(ruleset_fd);
+            if libc::prctl(libc::PR_SET_NO_NEW_PRIVS, 1, 0, 0, 0) != 0 {
+                return Err(std::io::Error::last_os_error());
+            }
+            if restrict_self(ruleset_fd) != 0 {
+                return Err(std::io::Error::last_os_error());
+            }
             libc::close(ruleset_fd);
         }
+        Ok(())
     }
 }

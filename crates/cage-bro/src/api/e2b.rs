@@ -129,22 +129,40 @@ async fn get_one(
 async fn kill(State(state): State<AppState>, Path(id): Path<String>) -> (StatusCode, Json<Value>) {
     match parse_id(&id) {
         Some(uuid) => match state.runtime.get(&uuid).await {
-            Some(sandbox) => {
-                let _ = state.runtime.destroy(&sandbox).await;
-                // Remove the per-sandbox workspace dir we created on `create`,
-                // so killed sandboxes don't leak directories on disk.
-                if let Some(ref ws) = sandbox.config.workspace_dir {
-                    let _ = tokio::fs::remove_dir_all(ws).await;
+            Some(sandbox) => match state.runtime.destroy(&sandbox).await {
+                Ok(()) => {
+                    // Remove the per-sandbox workspace dir we created on `create`,
+                    // so killed sandboxes don't leak directories on disk.
+                    if let Some(ref ws) = sandbox.config.workspace_dir {
+                        let _ = tokio::fs::remove_dir_all(ws).await;
+                    }
+                    (StatusCode::NO_CONTENT, Json(json!({})))
                 }
-                (StatusCode::NO_CONTENT, Json(json!({})))
-            }
+                Err(e) => {
+                    tracing::error!(sandbox_id = %id, "destroy failed: {}", e);
+                    (
+                        StatusCode::INTERNAL_SERVER_ERROR,
+                        Json(json!({ "code": 500, "message": format!("destroy failed: {}", e) })),
+                    )
+                }
+            },
             None => not_found(&id),
         },
         None => bad_id(&id),
     }
 }
 
-async fn set_timeout(Path(id): Path<String>) -> (StatusCode, Json<Value>) {
+async fn set_timeout(
+    State(state): State<AppState>,
+    Path(id): Path<String>,
+) -> (StatusCode, Json<Value>) {
+    let uuid = match parse_id(&id) {
+        Some(u) => u,
+        None => return bad_id(&id),
+    };
+    if state.runtime.get(&uuid).await.is_none() {
+        return not_found(&id);
+    }
     // Acknowledged; cage-bro does not auto-reap sandboxes yet.
     tracing::debug!(sandbox_id = %id, "E2B set_timeout (no-op ack)");
     (StatusCode::NO_CONTENT, Json(json!({})))

@@ -239,6 +239,7 @@ curl -X POST http://localhost:8080/sandboxes -d '{"templateID":"base"}'   # crea
 curl http://localhost:8080/sandboxes                                       # list
 curl http://localhost:8080/sandboxes/<id>                                  # get
 curl -X DELETE http://localhost:8080/sandboxes/<id>                        # kill
+curl -X POST http://localhost:8080/sandboxes/<id>/timeout -d '{"timeout":30}'  # refresh timeout (acknowledged)
 # cage-bro extension: run a command inside a tracked sandbox
 curl -X POST http://localhost:8080/sandboxes/<id>/exec -d '{"command":"python3 -V"}'
 ```
@@ -259,7 +260,7 @@ rollback / parallel-exploration (e.g. RL rollouts) agent workflows. This is
 
 ## Architecture
 
-```
+```text
 cage-bro (single Rust binary)
 ├── Axum HTTP server (REST API + E2B lifecycle + dashboard)
 ├── ProcessRuntime (exec isolation: Landlock + rlimits, snapshots)
