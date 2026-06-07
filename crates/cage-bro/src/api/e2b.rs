@@ -131,6 +131,11 @@ async fn kill(State(state): State<AppState>, Path(id): Path<String>) -> (StatusC
         Some(uuid) => match state.runtime.get(&uuid).await {
             Some(sandbox) => {
                 let _ = state.runtime.destroy(&sandbox).await;
+                // Remove the per-sandbox workspace dir we created on `create`,
+                // so killed sandboxes don't leak directories on disk.
+                if let Some(ref ws) = sandbox.config.workspace_dir {
+                    let _ = tokio::fs::remove_dir_all(ws).await;
+                }
                 (StatusCode::NO_CONTENT, Json(json!({})))
             }
             None => not_found(&id),

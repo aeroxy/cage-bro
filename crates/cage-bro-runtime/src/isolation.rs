@@ -145,8 +145,11 @@ fn set_rlimits(mem_bytes: Option<u64>, cpu_secs: Option<u64>, fsize_bytes: Optio
         if let Some(bytes) = fsize_bytes {
             set_one(libc::RLIMIT_FSIZE, bytes);
         }
-        // Conservative fork-bomb / fd-exhaustion guards. Best-effort.
-        set_one(libc::RLIMIT_NPROC, 256);
+        // Per-process fd-exhaustion guard (best-effort). We deliberately do NOT
+        // set RLIMIT_NPROC: it accounts processes/threads per *real UID*, not per
+        // process tree, so a small constant would be shared across the server and
+        // every sandbox and trigger spurious EAGAIN. Per-sandbox process caps
+        // belong to the deploy layer (e.g. cgroups `pids.max`).
         set_one(libc::RLIMIT_NOFILE, 1024);
     }
 }
