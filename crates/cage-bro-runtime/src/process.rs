@@ -29,10 +29,13 @@ pub struct ProcessRuntime {
 }
 
 /// Internal bookkeeping for a stored snapshot: the on-disk directory holding
-/// the captured workspace tree.
+/// the captured workspace tree, plus the originating sandbox's config so a
+/// restore preserves its resource limits / network setting instead of
+/// reverting to defaults.
 #[derive(Clone)]
 struct SnapshotRecord {
     path: PathBuf,
+    config: SandboxConfig,
 }
 
 impl ProcessRuntime {
@@ -132,10 +135,10 @@ impl SandboxRuntime for ProcessRuntime {
         };
 
         let dest = self.base_dir.join(SNAPSHOT_SUBDIR).join(snapshot_id.to_string());
-        self.snapshots
-            .lock()
-            .await
-            .insert(snapshot_id, SnapshotRecord { path: dest });
+        self.snapshots.lock().await.insert(
+            snapshot_id,
+            SnapshotRecord { path: dest, config: sandbox.config.clone() },
+        );
 
         tracing::info!(sandbox_id = %sandbox.id, snapshot_id = %snapshot_id, "Snapshot captured");
         Ok(snapshot)
@@ -163,11 +166,9 @@ impl SandboxRuntime for ProcessRuntime {
             .map_err(|e| RuntimeError::RestoreFailed(format!("join error: {}", e)))?
             .map_err(|e| RuntimeError::RestoreFailed(e.to_string()))?;
 
-        // Re-derive config from the snapshotted sandbox, repointing the workspace.
-        let config = SandboxConfig {
-            workspace_dir: Some(dest.to_string_lossy().to_string()),
-            ..Default::default()
-        };
+        // Reuse the snapshotted sandbox's config, repointing only the workspace.
+        let mut config = record.config.clone();
+        config.workspace_dir = Some(dest.to_string_lossy().to_string());
 
         let sandbox = Sandbox {
             id: new_id,
@@ -203,6 +204,13 @@ fn run_isolated(
     if let Some(ref dir) = working_dir {
         command.current_dir(dir);
     }
+    // Put the child in its own process group so a timeout can kill the whole
+    // tree (descendants it spawned), not just the direct child.
+    #[cfg(unix)]
+    {
+        use std::os::unix::process::CommandExt;
+        command.process_group(0);
+    }
 
     // Register isolation (pre_exec hook). The guard holds the parent's copy of
     // the Landlock descriptor; the child inherits its own copy in pre_exec, so
@@ -222,6 +230,12 @@ fn run_isolated(
         Some(dur) => match child.wait_timeout(dur) {
             Ok(Some(status)) => (status.code().unwrap_or(-1), false),
             Ok(None) => {
+                // Kill the whole process group so descendants don't survive.
+                #[cfg(unix)]
+                unsafe {
+                    libc::killpg(child.id() as libc::pid_t, libc::SIGKILL);
+                }
+                #[cfg(not(unix))]
                 let _ = child.kill();
                 let _ = child.wait();
                 (-1, true)
