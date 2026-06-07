@@ -25,12 +25,17 @@ pub async fn run(host: &str, port: u16) -> anyhow::Result<()> {
 
     tokio::fs::create_dir_all(&workspace).await?;
 
-    // The sandbox registry is in-memory, so ephemeral workspace dirs left by a
-    // prior process are unreachable via the API. Prune them on startup to avoid
-    // an unbounded disk leak across restarts. (User snapshots under
-    // .cage-bro/snapshots are intentionally preserved.)
-    for sub in [".cage-bro/e2b", ".cage-bro/restored"] {
-        let _ = tokio::fs::remove_dir_all(cwd.join(sub)).await;
+    // The sandbox registry and snapshot index are in-memory, so any workspace
+    // or snapshot dirs left by a prior process are unreachable via the API after
+    // a restart. Prune them on startup to avoid an unbounded disk leak; the
+    // common case (dirs absent) is NotFound, which is not an error worth logging.
+    for sub in [".cage-bro/e2b", ".cage-bro/restored", ".cage-bro/snapshots"] {
+        let path = cwd.join(sub);
+        if let Err(e) = tokio::fs::remove_dir_all(&path).await {
+            if e.kind() != std::io::ErrorKind::NotFound {
+                tracing::error!(path = %path.display(), "failed to prune stale dir on startup: {}", e);
+            }
+        }
     }
 
     let state = AppState {
