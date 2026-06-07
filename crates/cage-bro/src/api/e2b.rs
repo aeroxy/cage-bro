@@ -73,10 +73,7 @@ async fn create(
 
     // Each E2B sandbox gets an isolated workspace dir.
     let id = Uuid::new_v4();
-    let workspace = std::env::current_dir()
-        .unwrap_or_else(|_| ".".into())
-        .join(".cage-bro/e2b")
-        .join(id.to_string());
+    let workspace = e2b_workspace_dir(&id);
     if let Err(e) = tokio::fs::create_dir_all(&workspace).await {
         return (
             StatusCode::INTERNAL_SERVER_ERROR,
@@ -131,11 +128,11 @@ async fn kill(State(state): State<AppState>, Path(id): Path<String>) -> (StatusC
         Some(uuid) => match state.runtime.get(&uuid).await {
             Some(sandbox) => match state.runtime.destroy(&sandbox).await {
                 Ok(()) => {
-                    // Remove the per-sandbox workspace dir we created on `create`,
-                    // so killed sandboxes don't leak directories on disk.
-                    if let Some(ref ws) = sandbox.config.workspace_dir {
-                        let _ = tokio::fs::remove_dir_all(ws).await;
-                    }
+                    // Delete only the e2b-managed dir for this id, derived the
+                    // same way `create` builds it — never `sandbox.config`'s
+                    // path. This makes arbitrary-path deletion impossible even
+                    // if a registry sandbox carries a foreign/shared workspace.
+                    let _ = tokio::fs::remove_dir_all(e2b_workspace_dir(&uuid)).await;
                     (StatusCode::NO_CONTENT, Json(json!({})))
                 }
                 Err(e) => {
@@ -224,6 +221,16 @@ async fn exec(
             Json(json!({ "message": format!("exec failed: {}", e) })),
         ),
     }
+}
+
+/// The cage-bro-managed workspace directory for an E2B sandbox id. `create` and
+/// `kill` both derive the path here, so `kill` can only ever delete a directory
+/// that `create` owns — never an arbitrary or foreign `workspace_dir`.
+fn e2b_workspace_dir(id: &Uuid) -> std::path::PathBuf {
+    std::env::current_dir()
+        .unwrap_or_else(|_| ".".into())
+        .join(".cage-bro/e2b")
+        .join(id.to_string())
 }
 
 fn parse_id(id: &str) -> Option<Uuid> {
