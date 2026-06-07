@@ -40,10 +40,14 @@ pub fn routes() -> Router<AppState> {
 #[derive(Deserialize, Default)]
 #[serde(default, rename_all = "camelCase")]
 struct CreateSandboxRequest {
+    // E2B uses uppercase acronyms (templateID, not templateId), so override the
+    // camelCase rule for these to match the SDK's wire format.
+    #[serde(rename = "templateID")]
     template_id: Option<String>,
     metadata: Option<std::collections::HashMap<String, String>>,
     /// Seconds the sandbox should stay alive (advisory; not yet auto-reaped).
     timeout: Option<u64>,
+    #[serde(rename = "memoryMB")]
     memory_mb: Option<u64>,
 }
 
@@ -170,6 +174,7 @@ async fn set_timeout(
 }
 
 #[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
 struct ExecRequest {
     command: String,
     timeout_ms: Option<u64>,
