@@ -3,3 +3,4 @@ pub mod file;
 pub mod code;
 pub mod sandbox;
 pub mod browser;
+pub mod e2b;

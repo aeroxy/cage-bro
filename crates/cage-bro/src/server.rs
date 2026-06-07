@@ -41,6 +41,8 @@ pub async fn run(host: &str, port: u16) -> anyhow::Result<()> {
         .nest("/v1/file", api::file::routes())
         .nest("/v1/code", api::code::routes())
         .nest("/v1/browser", api::browser::routes())
+        // E2B-compatible lifecycle API, mounted at root for SDK drop-in.
+        .merge(api::e2b::routes())
         .with_state(state);
 
     // Dashboard: serve embedded static assets, SPA fallback to index.html
