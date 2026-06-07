@@ -258,6 +258,12 @@ same snapshot repeatedly forks independent copies — useful for checkpoint /
 rollback / parallel-exploration (e.g. RL rollouts) agent workflows. This is
 **filesystem-state only** — process and memory state are not preserved.
 
+The snapshot index is **in-memory**, consistent with the rest of the server
+(the sandbox registry is in-memory too) — it does not survive a process
+restart. Snapshot *directories* persist on disk under `.cage-bro/snapshots/`,
+but the index needed to `restore` them is rebuilt only for the current process
+lifetime. Treat snapshots as scoped to a running server.
+
 ## Architecture
 
 ```text
