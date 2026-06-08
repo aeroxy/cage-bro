@@ -40,11 +40,11 @@ def get_platform() -> tuple[str, str]:
             f"Build from source: cargo install --git https://github.com/aeroxy/cage-bro"
         )
 
-    # Check if pre-built binary exists (only macos-arm64 for now)
-    available = {("macos", "arm64")}
+    # Pre-built binaries published to GitHub releases.
+    available = {("macos", "arm64"), ("linux", "x86_64")}
     if (os_name, arch) not in available:
         raise RuntimeError(
-            f"No pre-built binary for {os_name}-{arch} yet (available: macos-arm64). "
+            f"No pre-built binary for {os_name}-{arch} yet (available: macos-arm64, linux-x86_64). "
             f"Build from source: cargo install --git https://github.com/aeroxy/cage-bro"
         )
 

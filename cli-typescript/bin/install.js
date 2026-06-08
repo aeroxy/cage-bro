@@ -35,11 +35,11 @@ function getPlatform() {
     );
   }
 
-  // Check if pre-built binary exists (only macos-arm64 for now)
-  const available = new Set(["macos-arm64"]);
+  // Pre-built binaries published to GitHub releases.
+  const available = new Set(["macos-arm64", "linux-x86_64"]);
   if (!available.has(`${osName}-${archName}`)) {
     throw new Error(
-      `No pre-built binary for ${osName}-${archName} yet (available: macos-arm64). ` +
+      `No pre-built binary for ${osName}-${archName} yet (available: macos-arm64, linux-x86_64). ` +
       `Build from source: cargo install --git https://github.com/aeroxy/cage-bro`
     );
   }

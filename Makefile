@@ -1,4 +1,7 @@
-.PHONY: build release check run test clean setup dashboard bump-patch bump-minor bump-major publish
+.PHONY: build release release-linux release-all check run test clean setup dashboard bump-patch bump-minor bump-major publish
+
+LINUX_TARGET = x86_64-unknown-linux-gnu
+LINUX_OUT    = target/$(LINUX_TARGET)/release
 
 ## Build the project (debug)
 build: dashboard
@@ -7,7 +10,20 @@ build: dashboard
 ## Release build — use this before manual testing
 release: dashboard
 	cargo build --release
-	zip -j target/release/cage-bro-macos-arm64.zip target/release/cage-bro
+
+## Cross-build a Linux x86_64 release binary (requires: brew install zig && cargo install cargo-zigbuild)
+release-linux: dashboard
+	cargo zigbuild --release --target $(LINUX_TARGET)
+
+## Build + archive release binaries for all shipped platforms (macOS arm64 + Linux x86_64).
+## One .tar.gz per platform — consumed by Homebrew and the npm/pip CLIs alike.
+release-all: release release-linux
+	tar -C target/release -czf target/release/cage-bro-macos-arm64.tar.gz cage-bro
+	tar -C $(LINUX_OUT) -czf $(LINUX_OUT)/cage-bro-linux-x86_64.tar.gz cage-bro
+	@echo ""
+	@echo "Release archives ready:"
+	@echo "  target/release/cage-bro-macos-arm64.tar.gz"
+	@echo "  $(LINUX_OUT)/cage-bro-linux-x86_64.tar.gz"
 
 ## Type-check without producing a binary
 check:
@@ -46,14 +62,18 @@ publish: dashboard
 	cargo publish -p cage-bro-runtime --allow-dirty
 	cargo publish -p cage-bro --allow-dirty
 
-## Update Formula/cage-bro.rb SHA256 from local release zip (run after release, before upload)
+## Update Formula/cage-bro.rb SHA256s from local release tarballs (run after release-all, before upload)
 ##   make update-formula
 update-formula:
-	@mac_zip="target/release/cage-bro-macos-arm64.zip"; \
-	echo "Computing macOS SHA256 …"; \
-	mac_sha=$$(shasum -a 256 "$$mac_zip" | cut -d' ' -f1); \
-	echo "macOS SHA256: $$mac_sha"; \
-	sed -i '' "s/sha256 \"[A-Za-z0-9_-]*\"/sha256 \"$$mac_sha\"/" Formula/cage-bro.rb; \
+	@mac_tar="target/release/cage-bro-macos-arm64.tar.gz"; \
+	lin_tar="$(LINUX_OUT)/cage-bro-linux-x86_64.tar.gz"; \
+	echo "Computing SHA256s …"; \
+	export MAC_SHA=$$(shasum -a 256 "$$mac_tar" | cut -d' ' -f1); \
+	export LIN_SHA=$$(shasum -a 256 "$$lin_tar" | cut -d' ' -f1); \
+	echo "macOS arm64    SHA256: $$MAC_SHA"; \
+	echo "Linux x86_64   SHA256: $$LIN_SHA"; \
+	perl -0pi -e 's/(macos-arm64\.tar\.gz"\s*\n\s*sha256 ")[0-9a-f]+/$$1$$ENV{MAC_SHA}/' Formula/cage-bro.rb; \
+	perl -0pi -e 's/(linux-x86_64\.tar\.gz"\s*\n\s*sha256 ")[0-9a-f]+/$$1$$ENV{LIN_SHA}/' Formula/cage-bro.rb; \
 	echo "Formula/cage-bro.rb updated"
 
 ## Bump the patch version (0.1.0 → 0.1.1) and update all version references

@@ -38,9 +38,9 @@ toml = { workspace = true }
 shell-words = "1.1.1"
 tokio-tungstenite = "0.29.0"
 futures-util = "0.3.32"
-reqwest = { version = "0.12", features = ["json"] }
+reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls"] }
 mime_guess = "2.0.5"
 
 [dev-dependencies]
-reqwest = { version = "0.12", features = ["json"] }
+reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls"] }
 tokio-tungstenite = "0.29.0"
