@@ -7,14 +7,14 @@ class CageBro < Formula
   on_macos do
     on_arm do
       url "https://github.com/aeroxy/cage-bro/releases/download/0.2.0/cage-bro-macos-arm64.tar.gz"
-      sha256 "8df7858fd0494fca89a1fa20e5b4ae1f3cc9f0aa952f9a45ffde41dcc4a996e7"
+      sha256 "9efb2d42b3e89e7f5de90a52e35d52d1446091d293d2ebfdb38b1ea473eaecda"
     end
   end
 
   on_linux do
     on_intel do
       url "https://github.com/aeroxy/cage-bro/releases/download/0.2.0/cage-bro-linux-x86_64.tar.gz"
-      sha256 "7f6546a25d4aaccfd4aa342e0e17297c2123177ca0d6f3aa109700e105ff5b6c"
+      sha256 "6f39a06170acd32ed0ed418a21a4361d76daf612abae7def896e5ef0bb9cee76"
     end
   end
 
