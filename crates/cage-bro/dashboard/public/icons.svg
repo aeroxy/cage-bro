@@ -1,24 +1,15 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="100%" height="100%">
-  <!-- Clean Black Background with Rounded Corners -->
-  <rect width="512" height="512" rx="112" fill="#000000" />
+<svg width="256" height="256" viewBox="0 0 256 256" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="cage-bro">
+  <!-- container: deep-black rounded square with a hairline rust edge -->
+  <rect width="256" height="256" rx="56" fill="#0D0D0D"/>
+  <rect x="6" y="6" width="244" height="244" rx="50" fill="none" stroke="#CE422B" stroke-opacity="0.35" stroke-width="4"/>
 
-  <!-- The Sandbox / Cage Infrastructure (White Wireframe) -->
-  <g stroke="#FFFFFF" stroke-linecap="round" stroke-linejoin="round" fill="none">
-    <!-- Top Face Grid / Viewport Axis -->
-    <path d="M 256 60 L 396 140 L 256 220 L 116 140 Z" stroke-width="14" />
-
-    <!-- Main Outer Structural Pillars -->
-    <path d="M 116 140 L 116 340 L 256 420 L 396 340 L 396 140" stroke-width="14" />
-    
-    <!-- Center Secure Pillar (Splits the Visor Perfectly) -->
-    <path d="M 256 220 L 256 420" stroke-width="14" />
-
-    <!-- Front Left Cage Bars -->
-    <path d="M 163 167 L 163 367" stroke-width="8" />
-    <path d="M 210 193 L 210 393" stroke-width="8" />
-
-    <!-- Front Right Cage Bars -->
-    <path d="M 303 193 L 303 393" stroke-width="8" />
-    <path d="M 349 167 L 349 367" stroke-width="8" />
+  <!-- caged prompt: rust brackets enclosing a terminal-green block cursor -->
+  <g stroke="#CE422B" stroke-width="20" stroke-linecap="square" fill="none">
+    <!-- left bracket [ -->
+    <path d="M112 70 H78 V186 H112"/>
+    <!-- right bracket ] -->
+    <path d="M144 70 H178 V186 H144"/>
   </g>
+  <!-- block cursor -->
+  <rect x="114" y="108" width="28" height="40" fill="#4AF626"/>
 </svg>
