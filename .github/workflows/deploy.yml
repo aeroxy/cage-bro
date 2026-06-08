@@ -13,11 +13,16 @@ concurrency:
   group: pages
   cancel-in-progress: true
 
+# Force the node24 runtime for JS actions during GitHub's node20 → node24
+# transition, so no action falls back to the deprecated node20 runtime.
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - uses: oven-sh/setup-bun@v2
         with:
