@@ -1,7 +1,10 @@
-.PHONY: build release release-linux release-all check run test clean setup dashboard bump-patch bump-minor bump-major publish publish-npm setup-pypi publish-pypi
+.PHONY: build release release-linux release-all check run test clean setup dashboard bump-patch bump-minor bump-major publish publish-npm publish-sdk-npm publish-cli-npm setup-pypi publish-pypi publish-sdk-pypi publish-cli-pypi
 
 LINUX_TARGET = x86_64-unknown-linux-gnu
 LINUX_OUT    = target/$(LINUX_TARGET)/release
+
+PYBUILD = cli-python/.venv/bin/python -m build
+TWINE   = cli-python/.venv/bin/twine
 
 ## Build the project (debug)
 build: dashboard
@@ -62,8 +65,15 @@ publish: dashboard
 	cargo publish -p cage-bro-runtime --allow-dirty
 	cargo publish -p cage-bro --allow-dirty
 
+## Publish both npm packages (SDK first — the CLI depends on it)
+publish-npm: publish-sdk-npm publish-cli-npm
+
+## Publish @cage-bro/sdk to npm
+publish-sdk-npm:
+	cd sdk/typescript && npm publish --access public
+
 ## Publish @cage-bro/cli to npm
-publish-npm:
+publish-cli-npm:
 	cd cli-typescript && npm publish --access public
 
 ## Setup Python venv for cli-python (run once)
@@ -71,10 +81,20 @@ setup-pypi:
 	python3 -m venv cli-python/.venv
 	cli-python/.venv/bin/pip install build twine httpx
 
+## Publish both PyPI packages (SDK first — the CLI depends on it)
+publish-pypi: publish-sdk-pypi publish-cli-pypi
+
+## Build and publish cage-bro (Python SDK) to PyPI
+publish-sdk-pypi:
+	rm -rf sdk/python/dist
+	$(PYBUILD) sdk/python
+	$(TWINE) upload sdk/python/dist/*
+
 ## Build and publish cage-bro-cli to PyPI
-publish-pypi:
+publish-cli-pypi:
 	rm -rf cli-python/dist
-	cd cli-python && .venv/bin/python -m build && .venv/bin/twine upload dist/*
+	$(PYBUILD) cli-python
+	$(TWINE) upload cli-python/dist/*
 
 ## Update Formula/cage-bro.rb SHA256s from local release tarballs (run after release-all, before upload)
 ##   make update-formula
