@@ -53,3 +53,4 @@ open http://localhost:8080
 - [Common Patterns](common-patterns.md) -- The 3 most common use cases
 - [Gotchas](gotchas.md) -- Edge cases, limitations, and things that will bite you
 - [Related](related.md) -- Integrations and ecosystem
+- [Branding & Assets](branding.md) -- Logo, palette, and where the brand assets live
