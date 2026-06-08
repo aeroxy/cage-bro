@@ -23,8 +23,5 @@
   "repository": {
     "type": "git",
     "url": "git+https://github.com/aeroxy/cage-bro.git"
-  },
-  "dependencies": {
-    "@cage-bro/sdk": "^0.1.0"
   }
 }
