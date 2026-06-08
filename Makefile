@@ -1,4 +1,4 @@
-.PHONY: build release release-linux release-all check run test clean setup dashboard bump-patch bump-minor bump-major publish
+.PHONY: build release release-linux release-all check run test clean setup dashboard bump-patch bump-minor bump-major publish publish-npm setup-pypi publish-pypi
 
 LINUX_TARGET = x86_64-unknown-linux-gnu
 LINUX_OUT    = target/$(LINUX_TARGET)/release
@@ -61,6 +61,20 @@ publish: dashboard
 	cargo publish -p cage-bro-code --allow-dirty
 	cargo publish -p cage-bro-runtime --allow-dirty
 	cargo publish -p cage-bro --allow-dirty
+
+## Publish @cage-bro/cli to npm
+publish-npm:
+	cd cli-typescript && npm publish --access public
+
+## Setup Python venv for cli-python (run once)
+setup-pypi:
+	python3 -m venv cli-python/.venv
+	cli-python/.venv/bin/pip install build twine httpx
+
+## Build and publish cage-bro-cli to PyPI
+publish-pypi:
+	rm -rf cli-python/dist
+	cd cli-python && .venv/bin/python -m build && .venv/bin/twine upload dist/*
 
 ## Update Formula/cage-bro.rb SHA256s from local release tarballs (run after release-all, before upload)
 ##   make update-formula
