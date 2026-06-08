@@ -1,4 +1,4 @@
-name: Deploy Dashboard to GitHub Pages
+name: Deploy site to GitHub Pages
 
 on:
   # Manual-only: trigger from the Actions tab ("Run workflow"), not on every push.
@@ -23,7 +23,19 @@ jobs:
         with:
           bun-version: latest
 
-      - name: Install dependencies
+      # ── Landing page → served at /cage-bro ──────────────────────────────
+      - name: Install landing-page dependencies
+        run: bun install --frozen-lockfile
+        working-directory: landing-page
+
+      - name: Build landing page
+        run: bun run build
+        working-directory: landing-page
+        env:
+          BASE_PATH: /cage-bro/
+
+      # ── Dashboard → served at /cage-bro/dashboard ───────────────────────
+      - name: Install dashboard dependencies
         run: bun install --frozen-lockfile
         working-directory: crates/cage-bro/dashboard
 
@@ -31,12 +43,21 @@ jobs:
         run: bun run build
         working-directory: crates/cage-bro/dashboard
         env:
-          BASE_PATH: /cage-bro/
+          BASE_PATH: /cage-bro/dashboard/
           VITE_MOCK: "true"
+
+      # ── Assemble the combined site: landing at root, dashboard nested ───
+      - name: Assemble site
+        run: |
+          rm -rf _site
+          mkdir -p _site
+          cp -r landing-page/dist/. _site/
+          mkdir -p _site/dashboard
+          cp -r crates/cage-bro/dashboard/dist/. _site/dashboard/
 
       - uses: actions/upload-pages-artifact@v3
         with:
-          path: crates/cage-bro/dashboard/dist
+          path: _site
 
   deploy:
     needs: build

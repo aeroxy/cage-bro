@@ -1,9 +1,15 @@
-# cage-bro
+<p align="center">
+  <img src="landing-page/public/icon.svg" alt="cage-bro" width="112" height="112" />
+</p>
 
-[![crates.io](https://img.shields.io/crates/v/cage-bro)](https://crates.io/crates/cage-bro)
-[![npm CLI](https://img.shields.io/npm/v/@cage-bro/cli)](https://www.npmjs.com/package/@cage-bro/cli)
-[![PyPI CLI](https://img.shields.io/pypi/v/cage-bro-cli)](https://pypi.org/project/cage-bro-cli/)
-[![License](https://img.shields.io/badge/license-Apache--2.0-blue)](LICENSE)
+<h1 align="center">cage-bro</h1>
+
+<p align="center">
+  <a href="https://crates.io/crates/cage-bro"><img src="https://img.shields.io/crates/v/cage-bro" alt="crates.io" /></a>
+  <a href="https://www.npmjs.com/package/@cage-bro/cli"><img src="https://img.shields.io/npm/v/@cage-bro/cli" alt="npm CLI" /></a>
+  <a href="https://pypi.org/project/cage-bro-cli/"><img src="https://img.shields.io/pypi/v/cage-bro-cli" alt="PyPI CLI" /></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-Apache--2.0-blue" alt="License" /></a>
+</p>
 
 A sandboxed execution environment for AI agents. Single Rust binary with browser, shell, code execution, file ops, and MCP server.
 

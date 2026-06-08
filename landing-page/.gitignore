@@ -1,0 +1,7 @@
+# Environment variables
+.env*.local
+
+# Common ignores
+node_modules
+dist
+.DS_Store

@@ -1,0 +1,15 @@
+<svg width="256" height="256" viewBox="0 0 256 256" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="cage-bro">
+  <!-- container: deep-black rounded square with a hairline rust edge -->
+  <rect width="256" height="256" rx="56" fill="#0D0D0D"/>
+  <rect x="6" y="6" width="244" height="244" rx="50" fill="none" stroke="#CE422B" stroke-opacity="0.35" stroke-width="4"/>
+
+  <!-- caged prompt: rust brackets enclosing a terminal-green block cursor -->
+  <g stroke="#CE422B" stroke-width="20" stroke-linecap="square" fill="none">
+    <!-- left bracket [ -->
+    <path d="M112 70 H78 V186 H112"/>
+    <!-- right bracket ] -->
+    <path d="M144 70 H178 V186 H144"/>
+  </g>
+  <!-- block cursor -->
+  <rect x="114" y="108" width="28" height="40" fill="#4AF626"/>
+</svg>
